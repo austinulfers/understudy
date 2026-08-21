@@ -14,6 +14,8 @@ export const DENY_BASENAMES: string[] = [
   ".env.*",
   "*.pem",
   "*.key",
+  // Apple: App Store Connect API keys and APNs auth keys.
+  "*.p8",
   "*.p12",
   "*.pfx",
   "*.keystore",
