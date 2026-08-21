@@ -18,28 +18,83 @@ Everything here needs a paid Apple Developer Program membership.
 
 ### 1. Developer ID Application certificate
 
-This is the certificate that signs the app. It is *not* the "Apple Development"
-or "Apple Distribution" certificate, and it is not the Mac App Store one.
+This is the certificate that signs the app. It is *not* "Apple Development",
+"Apple Distribution", or "Developer ID **Installer**" (that one is for `.pkg`).
 
-On your Mac:
+The current certificate lives in `~/Documents/offhourslab/workspace-agent-signing/`
+and expires **2031-08-22**. What follows is how it was made — for renewal, or if
+someone else has to take this over.
 
-1. **Keychain Access → Certificate Assistant → Request a Certificate From a
-   Certificate Authority.** Enter your email, leave CA Email blank, pick *Saved
-   to disk*. This produces a `CertificateSigningRequest.certSigningRequest`.
-2. Go to <https://developer.apple.com/account/resources/certificates/add>, choose
-   **Developer ID Application**, upload the CSR, and download the resulting
-   `developerID_application.cer`.
-3. Double-click the `.cer` to import it into your login keychain.
-4. In Keychain Access, find **Developer ID Application: <your name> (TEAMID)**,
-   expand it so both the certificate *and* its private key are selected, right-click
-   → **Export 2 items…**, and save as `certificate.p12`. Set a strong export
-   password — that password becomes `APPLE_CERTIFICATE_PASSWORD`.
-
-Then base64 it for GitHub:
+**Generate a key and CSR locally.** The private key never leaves your Mac.
 
 ```sh
-base64 -i certificate.p12 | pbcopy   # now on your clipboard
+mkdir -p ~/Documents/offhourslab/workspace-agent-signing
+cd ~/Documents/offhourslab/workspace-agent-signing
+openssl req -new -newkey rsa:2048 -nodes \
+  -keyout devid.key -out devid.csr \
+  -subj "/emailAddress=you@example.com/CN=Your Name/C=US"
+chmod 600 devid.key
 ```
+
+**Create the certificate** at
+<https://developer.apple.com/account/resources/certificates/add> → **Developer ID
+Application** → upload `devid.csr` → download `developerID_application.cer`.
+
+> When asked which intermediate to use, choose **G2 Sub-CA**. This matters more
+> than it looks. A leaf certificate cannot outlive its issuer, and the legacy
+> "Developer ID Certification Authority" expires 2027-02-01 — so a cert issued
+> from it is truncated to whatever is left of that, regardless of the 5 years you
+> are entitled to. The G2 intermediate runs to 2031-09-17. If your new cert has a
+> suspiciously short life, this is why; make another one and pick G2. You get 5
+> Developer ID certs per account.
+
+**Build the `.p12`,** bundling the intermediate:
+
+```sh
+openssl x509 -inform DER -in developerID_application.cer -out devid-leaf.pem
+curl -sfO https://www.apple.com/certificateauthority/DeveloperIDG2CA.cer
+curl -sfo AppleRoot.cer https://www.apple.com/appleca/AppleIncRootCertificate.cer
+openssl x509 -inform DER -in DeveloperIDG2CA.cer -out intermediate.pem
+openssl x509 -inform DER -in AppleRoot.cer       -out root.pem
+cat intermediate.pem root.pem > chain.pem
+
+# Sanity check: does this cert actually match the key you generated?
+openssl x509 -in devid-leaf.pem -noout -modulus | openssl md5
+openssl rsa  -in devid.key      -noout -modulus | openssl md5   # must be identical
+
+openssl pkcs12 -export -inkey devid.key -in devid-leaf.pem -certfile chain.pem \
+  -name "Developer ID Application: Your Name (TEAMID)" -out certificate.p12
+```
+
+**The `.p12` must carry the whole chain — leaf *and* intermediate *and* Apple
+Root CA.** `codesign` builds the trust chain using only the keychain it was
+handed, and electron-builder hands it a throwaway keychain holding just what the
+`.p12` contained. Its bundled root keychain carries the WWDR CA, not Apple Root
+CA, so a `.p12` stopping at the intermediate fails partway through signing with:
+
+```
+Warning: unable to build chain to self-signed root for signer "Developer ID Application: …"
+… locale.pak: errSecInternalComponent
+```
+
+which `find-identity` reports as `CSSMERR_TP_NOT_TRUSTED` while still counting
+the identity as "1 valid identities found". The identity is fine; the anchor is
+missing. Bundling `root.pem` fixes it.
+
+Verify it the way electron-builder will, before trusting it to CI:
+
+```sh
+KC=~/Library/Keychains/p12-test.keychain-db
+security create-keychain -p testpw "$KC" && security unlock-keychain -p testpw "$KC"
+security list-keychains -d user -s $(security list-keychains -d user | tr -d ' "') "$KC"
+security import certificate.p12 -k "$KC" -P "<p12 password>" -T /usr/bin/codesign -f pkcs12
+security find-identity -v -p codesigning "$KC"      # expect: 1 valid identities found
+security delete-keychain "$KC"
+```
+
+The `list-keychains` line matters — trust evaluation only consults keychains in
+the search list, so without it a perfectly good `.p12` reports
+`0 valid identities found`.
 
 ### 2. App Store Connect API key
 
@@ -117,5 +172,7 @@ Gatekeeper-blocked anywhere else — use CI for anything you hand to someone.
 - **Notarization is slow.** Apple's notary service has to ingest the whole app,
   and this one is large — the bundled `claude` binary alone is ~317 MB. Expect
   the signing and notarization steps to dominate the run.
-- **Certificates expire** after 5 years, and the App Store Connect key can be
-  revoked. Both surface as a failure in the preflight or signing step.
+- **The certificate expires 2031-08-22.** Renewal is section 1 again; the App
+  Store Connect key can also be revoked independently. Either failing shows up in
+  the signing or notarization step, not the preflight — the preflight only checks
+  that the secrets are non-empty, not that they still work.
