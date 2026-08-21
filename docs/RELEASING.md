@@ -141,9 +141,13 @@ builds the DMG around it — but it leaves the DMG itself unsigned. The DMG is w
 people actually download, and Gatekeeper assesses it on mount, so the workflow
 signs, notarizes, and staples the DMG as a separate step afterwards.
 
-That means **two** round trips to Apple's notary service per release. Each has
-taken around 85 minutes for this app, so budget roughly 3 hours for a release
-run. The job's `timeout-minutes` is set accordingly.
+That means **two** round trips to Apple's notary service per release.
+
+Notarization time is dominated by Apple's queue, not by this app, and it varies
+enormously: the very first submission from a brand-new account took ~85 minutes,
+while a full CI run doing *both* passes finished in **6 minutes**. Assume minutes,
+but don't be alarmed by an occasional long one. `timeout-minutes` is set to 350
+so a bad day at Apple doesn't kill the job.
 
 electron-builder deletes the throwaway keychain it creates, so the DMG step
 builds its own from the same `.p12`. Two things in that step are load-bearing and

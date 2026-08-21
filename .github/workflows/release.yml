@@ -17,9 +17,9 @@ jobs:
   release:
     # arm64 runner. The app only targets mac arm64 (see packages/app/package.json -> build.mac.target).
     runs-on: macos-14
-    # Two notarization passes (app, then DMG), each of which has taken ~85 min for
-    # this app. Well under the 360 min hosted-runner ceiling, but nowhere near the
-    # 6h default being enough to rely on implicitly.
+    # Two notarization passes (app, then DMG). Usually a few minutes total, but
+    # Apple's queue is unpredictable — a first submission once took 85 minutes.
+    # Generous ceiling so a slow day at Apple doesn't kill an otherwise good run.
     timeout-minutes: 350
 
     steps:
