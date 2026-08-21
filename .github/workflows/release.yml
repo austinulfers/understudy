@@ -30,6 +30,27 @@ jobs:
           node-version: 22
           cache: pnpm
 
+      # Fail before the 5-minute build rather than after, and name exactly what
+      # is missing. Signing is not optional: an unsigned DMG will not launch on
+      # anyone else's Mac, so there is no useful degraded mode to fall back to.
+      - name: Preflight — check signing secrets
+        env:
+          CSC_LINK: ${{ secrets.APPLE_CERTIFICATE_P12_BASE64 }}
+          CSC_KEY_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_API_KEY_P8: ${{ secrets.APPLE_API_KEY_P8 }}
+          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+        run: |
+          missing=()
+          for name in CSC_LINK CSC_KEY_PASSWORD APPLE_API_KEY_P8 APPLE_API_KEY_ID APPLE_API_ISSUER; do
+            [ -n "${!name}" ] || missing+=("$name")
+          done
+          if [ ${#missing[@]} -gt 0 ]; then
+            echo "::error::Missing repository secrets for code signing: ${missing[*]}. See docs/RELEASING.md for how to create and set them."
+            exit 1
+          fi
+          echo "All signing secrets present."
+
       - run: pnpm install --frozen-lockfile
 
       - name: Typecheck
@@ -56,14 +77,70 @@ jobs:
             echo "exists=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Build DMG
+      # @electron/notarize wants a *path* to the .p8, not its contents.
+      - name: Stage App Store Connect API key
+        id: asc
         env:
-          # The app is intentionally unsigned (build.mac.identity is null).
-          # Without this, electron-builder hunts for a keychain identity and warns.
-          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+          APPLE_API_KEY_P8: ${{ secrets.APPLE_API_KEY_P8 }}
+        run: |
+          key_path="$RUNNER_TEMP/asc-api-key.p8"
+          printf '%s' "$APPLE_API_KEY_P8" > "$key_path"
+          chmod 600 "$key_path"
+          echo "path=$key_path" >> "$GITHUB_OUTPUT"
+
+      - name: Build, sign, and notarize DMG
+        env:
+          # electron-builder imports this into a throwaway keychain itself.
+          CSC_LINK: ${{ secrets.APPLE_CERTIFICATE_P12_BASE64 }}
+          CSC_KEY_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          # Presence of these three is what switches notarization on.
+          APPLE_API_KEY: ${{ steps.asc.outputs.path }}
+          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
         run: |
           pnpm --filter workspace-agent-app build
           pnpm --filter workspace-agent-app exec electron-builder --mac --publish never
+
+      - name: Shred API key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/asc-api-key.p8"
+
+      # Catches the failure mode where the build "succeeds" but produces
+      # something Gatekeeper will still reject on a user's machine.
+      - name: Verify signature, entitlements, and stapled ticket
+        run: |
+          set -euo pipefail
+          app="packages/app/release/mac-arm64/Workspace Agent.app"
+
+          echo "::group::codesign --verify"
+          codesign --verify --deep --strict --verbose=2 "$app"
+          echo "::endgroup::"
+
+          echo "::group::signing authority"
+          codesign -dvvv "$app" 2>&1 | grep -E "Authority|TeamIdentifier|flags="
+          echo "::endgroup::"
+
+          echo "::group::entitlements"
+          codesign -d --entitlements :- "$app"
+          echo "::endgroup::"
+
+          # Hardened runtime must be on, or notarization would not have passed.
+          codesign -dvvv "$app" 2>&1 | grep -q "flags=.*runtime" \
+            || { echo "::error::hardened runtime is not enabled on the signed app"; exit 1; }
+
+          # The stapled ticket is what lets the app launch on a Mac that has
+          # never seen it before, even offline. Without it users still get
+          # blocked, notarization or not.
+          echo "::group::stapler validate"
+          xcrun stapler validate "$app"
+          echo "::endgroup::"
+
+          # Final end-to-end check: this is the exact question Gatekeeper asks.
+          echo "::group::spctl assess"
+          spctl --assess --type execute --verbose=4 "$app"
+          echo "::endgroup::"
+
+          echo "Signed, notarized, and stapled."
 
       - name: Upload DMG as a build artifact
         uses: actions/upload-artifact@v4
@@ -88,20 +165,16 @@ jobs:
             exit 1
           fi
 
-          cat > /tmp/notes.md <<'NOTES'
+          cat > "$RUNNER_TEMP/notes.md" <<'NOTES'
           ### Install
 
           Apple Silicon (arm64) only.
 
-          1. Download the `.dmg` below, open it, and drag **Workspace Agent** to Applications.
-          2. This build is **not code-signed or notarized**, so macOS quarantines it and will
-             refuse to launch it. Clear the quarantine flag once:
+          Download the `.dmg` below, open it, and drag **Workspace Agent** to Applications.
 
-             ```sh
-             xattr -dr com.apple.quarantine "/Applications/Workspace Agent.app"
-             ```
-
-          3. Launch it. The app runs in the menu bar and has no Dock icon.
+          This build is signed with a Developer ID certificate and notarized by Apple,
+          so it launches without any Gatekeeper workaround. The app runs in the menu
+          bar and has no Dock icon.
 
           ---
           NOTES
@@ -109,7 +182,7 @@ jobs:
           gh release create "$TAG" \
             --title "Workspace Agent $VERSION" \
             --target "$GITHUB_SHA" \
-            --notes-file /tmp/notes.md \
+            --notes-file "$RUNNER_TEMP/notes.md" \
             --generate-notes \
             "${dmgs[@]}"
 

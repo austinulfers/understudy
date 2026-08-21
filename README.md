@@ -47,13 +47,17 @@ Slack does not (Socket Mode dials out).
 ### 3. Build the Mac app (once)
 
 ```sh
-pnpm app dist                                      # → packages/app/release/Workspace Agent-<v>-arm64.dmg
+pnpm app dist:unsigned                             # → packages/app/release/Workspace Agent-<v>-arm64.dmg
 cp "packages/app/release/Workspace Agent"*.dmg packages/broker/downloads/
 ```
 
 The broker now serves the installer at `/downloads/…` and links it from every token page.
-The build is unsigned by default (`identity: null`) — first launch is right-click → Open.
-With an Apple Developer ID, set `identity` in `packages/app/package.json` to sign + notarize.
+
+`dist:unsigned` skips code signing, so that DMG runs on your machine but is
+Gatekeeper-blocked on anyone else's. For a build you hand to a coworker, use the
+signed and notarized DMG that CI publishes to
+[Releases](https://github.com/austinulfers/workspace-agent/releases) on every
+version bump — see [docs/RELEASING.md](docs/RELEASING.md).
 
 ### 4. Enroll a coworker (no terminal involved)
 

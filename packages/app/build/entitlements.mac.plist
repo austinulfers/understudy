@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <!--
+    Hardened runtime is required for notarization, and it blocks things Electron
+    needs by default. Each entitlement below buys back one of them.
+
+    This file is used for both `entitlements` (the .app itself) and
+    `entitlementsInherit` (helper processes and every other Mach-O in the
+    bundle, including the bundled `claude` binary, which is a Bun/JavaScriptCore
+    executable and JITs just like V8 does).
+  -->
+
+  <!-- V8 and JavaScriptCore both allocate executable memory at runtime. -->
+  <key>com.apple.security.cs.allow-jit</key>
+  <true/>
+  <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
+  <true/>
+
+  <!-- Electron reads ELECTRON_RUN_AS_NODE / NODE_OPTIONS at launch. -->
+  <key>com.apple.security.cs.allow-dyld-environment-variables</key>
+  <true/>
+
+  <!-- The app spawns the bundled `claude` binary and loads native modules. -->
+  <key>com.apple.security.cs.disable-library-validation</key>
+  <true/>
+</dict>
+</plist>
