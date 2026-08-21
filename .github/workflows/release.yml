@@ -1,0 +1,116 @@
+name: Release macOS app
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  # Never cancel a run mid-upload; a half-published release is worse than a queue.
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    # arm64 runner. The app only targets mac arm64 (see packages/app/package.json -> build.mac.target).
+    runs-on: macos-14
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Must run before setup-node so that `cache: pnpm` can find the store.
+      # No `version:` input — it reads `packageManager` from the root package.json.
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm -r typecheck
+
+      - name: Resolve version
+        id: meta
+        run: |
+          version=$(node -p "require('./packages/app/package.json').version")
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tag=v$version" >> "$GITHUB_OUTPUT"
+          echo "Building version $version"
+
+      - name: Check whether this version was already released
+        id: existing
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.meta.outputs.tag }}
+        run: |
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::Release $TAG already exists — building to verify, but not publishing. Bump the version in packages/app/package.json to cut a new release."
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build DMG
+        env:
+          # The app is intentionally unsigned (build.mac.identity is null).
+          # Without this, electron-builder hunts for a keychain identity and warns.
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+        run: |
+          pnpm --filter workspace-agent-app build
+          pnpm --filter workspace-agent-app exec electron-builder --mac --publish never
+
+      - name: Upload DMG as a build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: workspace-agent-${{ steps.meta.outputs.version }}-arm64-dmg
+          path: packages/app/release/*.dmg
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Publish release
+        if: steps.existing.outputs.exists == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.meta.outputs.tag }}
+          VERSION: ${{ steps.meta.outputs.version }}
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          dmgs=(packages/app/release/*.dmg)
+          if [ ${#dmgs[@]} -eq 0 ]; then
+            echo "::error::electron-builder produced no .dmg in packages/app/release" >&2
+            exit 1
+          fi
+
+          cat > /tmp/notes.md <<'NOTES'
+          ### Install
+
+          Apple Silicon (arm64) only.
+
+          1. Download the `.dmg` below, open it, and drag **Workspace Agent** to Applications.
+          2. This build is **not code-signed or notarized**, so macOS quarantines it and will
+             refuse to launch it. Clear the quarantine flag once:
+
+             ```sh
+             xattr -dr com.apple.quarantine "/Applications/Workspace Agent.app"
+             ```
+
+          3. Launch it. The app runs in the menu bar and has no Dock icon.
+
+          ---
+          NOTES
+
+          gh release create "$TAG" \
+            --title "Workspace Agent $VERSION" \
+            --target "$GITHUB_SHA" \
+            --notes-file /tmp/notes.md \
+            --generate-notes \
+            "${dmgs[@]}"
+
+          echo "::notice::Published $TAG with ${#dmgs[@]} asset(s)"
