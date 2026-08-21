@@ -1,0 +1,10 @@
+node_modules/
+dist/
+packages/app/release/
+packages/broker/downloads/
+.env
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+.DS_Store

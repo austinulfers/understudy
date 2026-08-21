@@ -1,0 +1,308 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Workspace Agent</title>
+<style>
+  :root {
+    --teal: #0e7c86;
+    --teal-deep: #0a5d65;
+    --ink: #1b2428;
+    --muted: #5b6a70;
+    --line: #dde4e5;
+    --bg: #f6f8f8;
+    --ok: #146c43;
+    --bad: #8a2020;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: system-ui, -apple-system, sans-serif; font-size: 13px; line-height: 1.5;
+    -webkit-user-select: none; user-select: none;
+  }
+  header {
+    display: flex; align-items: center; gap: 10px;
+    padding: 14px 20px; background: #fff; border-bottom: 1px solid var(--line);
+  }
+  header .dot { width: 10px; height: 10px; border-radius: 50%; background: #9aa7ac; }
+  header .dot.on { background: #2e9e5b; }
+  header h1 { font-size: 15px; margin: 0; font-weight: 650; }
+  header .usage { margin-left: auto; color: var(--muted); font-size: 12px; }
+  nav { display: flex; gap: 4px; padding: 10px 20px 0; }
+  nav button {
+    border: none; background: none; padding: 7px 14px; font-size: 13px; font-weight: 600;
+    color: var(--muted); cursor: pointer; border-radius: 8px 8px 0 0;
+  }
+  nav button.active { background: #fff; color: var(--teal-deep); border: 1px solid var(--line); border-bottom-color: #fff; }
+  main { background: #fff; border-top: 1px solid var(--line); margin-top: -1px; min-height: calc(100vh - 110px); padding: 18px 20px; }
+  .tab { display: none; }
+  .tab.active { display: block; }
+  .hint { color: var(--muted); font-size: 12px; }
+  .error { color: var(--bad); font-size: 12px; margin-top: 8px; min-height: 16px; }
+
+  /* people */
+  .person { display: flex; align-items: center; gap: 10px; padding: 8px 4px; border-bottom: 1px solid var(--line); }
+  .person .name { font-weight: 600; }
+  .person .meta { color: var(--muted); font-size: 12px; }
+  .person button {
+    margin-left: auto; border: 1px solid var(--line); background: #fff; color: var(--bad);
+    border-radius: 6px; padding: 3px 10px; cursor: pointer; font-size: 12px;
+  }
+  .person button:hover { border-color: var(--bad); }
+  .search { position: relative; margin-top: 16px; max-width: 380px; }
+  .search input {
+    width: 100%; padding: 8px 11px; border: 1px solid var(--line); border-radius: 8px;
+    font-size: 13px; outline: none; -webkit-user-select: text; user-select: text;
+  }
+  .search input:focus { border-color: var(--teal); }
+  .results {
+    position: absolute; left: 0; right: 0; top: 100%; background: #fff; border: 1px solid var(--line);
+    border-radius: 8px; margin-top: 4px; box-shadow: 0 6px 18px rgba(0,0,0,.08); z-index: 5;
+    max-height: 220px; overflow-y: auto;
+  }
+  .results div { padding: 8px 12px; cursor: pointer; }
+  .results div:hover { background: #eef6f7; }
+
+  /* conversations */
+  .thread { display: flex; align-items: baseline; gap: 10px; padding: 9px 4px; border-bottom: 1px solid var(--line); cursor: pointer; }
+  .thread:hover { background: #f4f9f9; }
+  .thread .who { font-weight: 600; }
+  .thread .when { margin-left: auto; color: var(--muted); font-size: 12px; white-space: nowrap; }
+  .msg { border: 1px solid var(--line); border-left-width: 3px; border-radius: 8px; padding: 9px 12px; margin: 8px 0; white-space: pre-wrap; -webkit-user-select: text; user-select: text; }
+  .msg.user { border-left-color: var(--teal); }
+  .msg.assistant { border-left-color: #9aa7ac; }
+  .msg.system { border-left-color: var(--bad); }
+  .msg .meta { color: var(--muted); font-size: 11px; margin-bottom: 3px; }
+  .back { border: none; background: none; color: var(--teal-deep); cursor: pointer; font-size: 13px; font-weight: 600; padding: 0 0 10px; }
+
+  /* settings */
+  .field { margin: 14px 0; }
+  .field label { display: flex; align-items: center; gap: 8px; padding: 4px 0; }
+  .field input[type=number] {
+    width: 90px; padding: 6px 9px; border: 1px solid var(--line); border-radius: 7px; font-size: 13px;
+    -webkit-user-select: text; user-select: text;
+  }
+  .save {
+    padding: 8px 18px; border: none; border-radius: 8px; background: var(--teal); color: #fff;
+    font-weight: 650; font-size: 13px; cursor: pointer;
+  }
+  .save:disabled { opacity: .6; }
+  .empty { color: var(--muted); font-style: italic; padding: 14px 0; }
+</style>
+</head>
+<body>
+<header>
+  <span class="dot" id="dot"></span>
+  <h1 id="title">Workspace Agent</h1>
+  <span class="usage" id="usage"></span>
+</header>
+<nav>
+  <button data-tab="people" class="active">People</button>
+  <button data-tab="convos">Conversations</button>
+  <button data-tab="settings">Budget</button>
+</nav>
+<main>
+  <div class="tab active" id="tab-people">
+    <p class="hint">These coworkers can ask your agent questions from Slack. Admins can always ask. You can also manage this from your DM with the bot: <b>allow @name</b>, <b>deny @name</b>, <b>team</b>.</p>
+    <div id="people"></div>
+    <div class="search">
+      <input type="text" id="user-search" placeholder="Add a coworker — type their name…" spellcheck="false">
+      <div class="results" id="user-results" style="display:none"></div>
+    </div>
+    <div class="error" id="people-error"></div>
+  </div>
+
+  <div class="tab" id="tab-convos">
+    <div id="thread-list"></div>
+    <div id="thread-view" style="display:none">
+      <button class="back" id="back">← All conversations</button>
+      <div id="thread-messages"></div>
+    </div>
+    <div class="error" id="convos-error"></div>
+  </div>
+
+  <div class="tab" id="tab-settings">
+    <p class="hint">Questions run on <b>your</b> Claude account. This cap is yours to set — once it's hit, the bot tells askers to try again tomorrow.</p>
+    <div class="field" id="limit-field">
+      <label><input type="radio" name="limit" value="default"> Team default (<span id="default-limit"></span> questions/day)</label>
+      <label><input type="radio" name="limit" value="custom"> Custom: <input type="number" id="custom-limit" min="0" max="10000"> questions/day</label>
+    </div>
+    <button class="save" id="save-limit">Save</button>
+    <div class="error" id="settings-error"></div>
+  </div>
+</main>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  let overview = null;
+
+  // --- tabs ---
+  for (const btn of document.querySelectorAll("nav button")) {
+    btn.onclick = () => {
+      document.querySelectorAll("nav button").forEach((b) => b.classList.remove("active"));
+      document.querySelectorAll(".tab").forEach((t) => t.classList.remove("active"));
+      btn.classList.add("active");
+      $("tab-" + btn.dataset.tab).classList.add("active");
+    };
+  }
+
+  function relTime(ts) {
+    const mins = Math.round((Date.now() - ts) / 60000);
+    if (mins < 1) return "just now";
+    if (mins < 60) return mins + "m ago";
+    if (mins < 48 * 60) return Math.round(mins / 60) + "h ago";
+    return new Date(ts).toLocaleDateString();
+  }
+
+  async function refresh() {
+    const res = await window.wa.panelOverview();
+    if (!res.ok) {
+      $("title").textContent = "Workspace Agent";
+      $("people-error").textContent = res.error;
+      return;
+    }
+    overview = res.data;
+    $("title").textContent = "Workspace Agent — “" + overview.hostName + "”";
+    $("dot").className = "dot" + (overview.online ? " on" : "");
+    const cap = overview.dailyLimit ?? overview.defaultDailyLimit;
+    $("usage").textContent = overview.usageToday + " of " + cap + " questions used today";
+    renderPeople();
+    renderThreads();
+    renderSettings();
+  }
+
+  // --- people ---
+  function renderPeople() {
+    const box = $("people");
+    box.innerHTML = "";
+    for (const person of overview.acl) {
+      const row = document.createElement("div");
+      row.className = "person";
+      const name = document.createElement("span");
+      name.className = "name";
+      name.textContent = person.name + (person.isOwner ? " (you)" : "");
+      const meta = document.createElement("span");
+      meta.className = "meta";
+      meta.textContent = person.isOwner ? "always allowed" : person.grantedBy === "admin" ? "granted by admin" : "added by you";
+      row.append(name, meta);
+      if (!person.isOwner) {
+        const remove = document.createElement("button");
+        remove.textContent = "Remove";
+        remove.onclick = async () => {
+          const res = await window.wa.panelAcl("remove", person.slackUserId);
+          $("people-error").textContent = res.ok ? "" : res.error;
+          refresh();
+        };
+        row.append(remove);
+      }
+      box.append(row);
+    }
+  }
+
+  let searchTimer = null;
+  $("user-search").addEventListener("input", () => {
+    clearTimeout(searchTimer);
+    const q = $("user-search").value.trim();
+    if (q.length < 2) { $("user-results").style.display = "none"; return; }
+    searchTimer = setTimeout(async () => {
+      const res = await window.wa.panelSearchUsers(q);
+      const box = $("user-results");
+      box.innerHTML = "";
+      if (!res.ok) { $("people-error").textContent = res.error; return; }
+      const existing = new Set(overview.acl.map((p) => p.slackUserId));
+      const candidates = res.data.users.filter((u) => !existing.has(u.id));
+      if (!candidates.length) { box.style.display = "none"; return; }
+      for (const user of candidates) {
+        const row = document.createElement("div");
+        row.textContent = user.name;
+        row.onclick = async () => {
+          box.style.display = "none";
+          $("user-search").value = "";
+          const added = await window.wa.panelAcl("add", user.id);
+          $("people-error").textContent = added.ok ? "" : added.error;
+          refresh();
+        };
+        box.append(row);
+      }
+      box.style.display = "block";
+    }, 250);
+  });
+
+  // --- conversations ---
+  function renderThreads() {
+    const box = $("thread-list");
+    box.innerHTML = "";
+    if (!overview.conversations.length) {
+      box.innerHTML = '<div class="empty">No conversations yet — they\'ll appear as soon as someone asks your agent something.</div>';
+      return;
+    }
+    for (const thread of overview.conversations) {
+      const row = document.createElement("div");
+      row.className = "thread";
+      const who = document.createElement("span");
+      who.className = "who";
+      who.textContent = thread.startedByName;
+      const count = document.createElement("span");
+      count.className = "meta";
+      count.textContent = thread.messages + " messages";
+      const when = document.createElement("span");
+      when.className = "when";
+      when.textContent = relTime(thread.lastActive);
+      row.append(who, count, when);
+      row.onclick = () => openThread(thread.threadKey);
+      box.append(row);
+    }
+  }
+
+  async function openThread(threadKey) {
+    const res = await window.wa.panelTranscript(threadKey);
+    if (!res.ok) { $("convos-error").textContent = res.error; return; }
+    $("convos-error").textContent = "";
+    const box = $("thread-messages");
+    box.innerHTML = "";
+    for (const message of res.data.messages) {
+      const div = document.createElement("div");
+      div.className = "msg " + message.role;
+      const meta = document.createElement("div");
+      meta.className = "meta";
+      meta.textContent =
+        (message.role === "user" ? message.askerName + " asked" : message.role === "assistant" ? "Your agent answered" : "System") +
+        " · " + new Date(message.at).toLocaleString();
+      const body = document.createElement("div");
+      body.textContent = message.content;
+      div.append(meta, body);
+      box.append(div);
+    }
+    $("thread-list").style.display = "none";
+    $("thread-view").style.display = "block";
+  }
+
+  $("back").onclick = () => {
+    $("thread-view").style.display = "none";
+    $("thread-list").style.display = "block";
+  };
+
+  // --- budget ---
+  function renderSettings() {
+    $("default-limit").textContent = overview.defaultDailyLimit;
+    const custom = overview.dailyLimit !== null && overview.dailyLimit !== undefined;
+    document.querySelector('input[name=limit][value=default]').checked = !custom;
+    document.querySelector('input[name=limit][value=custom]').checked = custom;
+    $("custom-limit").value = custom ? overview.dailyLimit : overview.defaultDailyLimit;
+  }
+
+  $("save-limit").onclick = async () => {
+    const custom = document.querySelector('input[name=limit][value=custom]').checked;
+    const value = custom ? Number($("custom-limit").value) : null;
+    $("save-limit").disabled = true;
+    const res = await window.wa.panelLimit(value);
+    $("save-limit").disabled = false;
+    $("settings-error").textContent = res.ok ? "" : res.error;
+    refresh();
+  };
+
+  refresh();
+  setInterval(refresh, 30000);
+</script>
+</body>
+</html>

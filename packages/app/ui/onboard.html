@@ -1,0 +1,219 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Workspace Agent</title>
+<style>
+  :root {
+    --teal: #0e7c86;
+    --teal-deep: #0a5d65;
+    --ink: #1b2428;
+    --muted: #5b6a70;
+    --line: #dde4e5;
+    --bg: #f6f8f8;
+    --ok: #146c43;
+    --warn: #8a6100;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  .wrap { padding: 28px 32px 32px; }
+  header { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; }
+  header svg { flex: none; }
+  h1 { font-size: 20px; margin: 0; font-weight: 650; }
+  .sub { color: var(--muted); margin: 0 0 22px; }
+  .step { margin-bottom: 20px; }
+  .step h2 {
+    font-size: 11px; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--teal-deep); margin: 0 0 8px; font-weight: 650;
+  }
+  input[type=text] {
+    width: 100%; padding: 9px 11px; border: 1px solid var(--line); border-radius: 8px;
+    font-size: 13px; background: #fff; color: var(--ink); outline: none;
+    -webkit-user-select: text; user-select: text;
+  }
+  input[type=text]:focus { border-color: var(--teal); box-shadow: 0 0 0 3px rgba(14,124,134,.15); }
+  .hint { color: var(--muted); font-size: 12px; margin-top: 6px; }
+  .row { display: flex; gap: 8px; margin-top: 8px; }
+  .folders { display: flex; flex-direction: column; gap: 6px; }
+  .chip {
+    display: flex; align-items: center; justify-content: space-between;
+    background: #fff; border: 1px solid var(--line); border-radius: 8px;
+    padding: 7px 11px; font-size: 13px; font-family: ui-monospace, Menlo, monospace;
+  }
+  .chip button {
+    border: none; background: none; color: var(--muted); cursor: pointer;
+    font-size: 15px; padding: 0 2px; line-height: 1;
+  }
+  .chip button:hover { color: #a33; }
+  .empty { color: var(--muted); font-size: 13px; font-style: italic; }
+  button.secondary {
+    margin-top: 8px; padding: 8px 14px; border: 1px solid var(--teal); border-radius: 8px;
+    background: #fff; color: var(--teal-deep); font-size: 13px; font-weight: 600; cursor: pointer;
+  }
+  button.secondary:hover { background: #eef6f7; }
+  .status { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+  .status .ok { color: var(--ok); }
+  .status .warn { color: var(--warn); }
+  .status a { color: var(--teal-deep); cursor: pointer; text-decoration: underline; }
+  .error {
+    display: none; background: #f7dede; color: #8a2020; border-radius: 8px;
+    padding: 10px 12px; font-size: 13px; margin-bottom: 12px;
+  }
+  button.primary {
+    width: 100%; padding: 12px; border: none; border-radius: 10px;
+    background: var(--teal); color: #fff; font-size: 15px; font-weight: 650; cursor: pointer;
+  }
+  button.primary:hover { background: var(--teal-deep); }
+  button.primary:disabled { opacity: .6; cursor: default; }
+  /* success view */
+  #success { display: none; text-align: center; padding-top: 40px; }
+  #success .check {
+    width: 76px; height: 76px; border-radius: 50%; background: var(--teal);
+    color: #fff; font-size: 40px; line-height: 76px; margin: 0 auto 18px;
+  }
+  #success h1 { margin-bottom: 6px; }
+  #success p { color: var(--muted); max-width: 360px; margin: 0 auto 10px; }
+  #success .primary { max-width: 220px; margin-top: 18px; }
+</style>
+</head>
+<body>
+<div class="wrap" id="form">
+  <header>
+    <svg width="40" height="40" viewBox="0 0 1024 1024"><rect width="1024" height="1024" rx="184" fill="#0e7c86"/><g fill="none" stroke="#a7e6ec" stroke-width="40" stroke-linecap="round"><path d="M 790 230 A 70 70 0 0 1 860 300"/><path d="M 790 166 A 134 134 0 0 1 924 300"/></g><circle cx="790" cy="300" r="32" fill="#fff"/><rect x="180" y="330" width="580" height="400" rx="100" fill="#fff"/><path d="M 292 726 C 288 792, 246 844, 186 868 C 292 852, 362 800, 396 728 Z" fill="#fff"/><polyline points="330,460 430,545 330,630" fill="none" stroke="#0e7c86" stroke-width="56" stroke-linecap="round" stroke-linejoin="round"/><rect x="480" y="592" width="150" height="52" rx="26" fill="#0e7c86"/></svg>
+    <h1>Workspace Agent</h1>
+  </header>
+  <p class="sub">Let coworkers ask questions about your code from Slack — read-only, only in folders you choose, and you see everything.</p>
+
+  <div class="step">
+    <h2>1 · Enrollment link</h2>
+    <input type="text" id="token" placeholder="Paste the link or token you were sent" spellcheck="false">
+    <div class="hint">It looks like <b>workspace-agent://enroll?…</b> or a short code. Links fill everything in automatically.</div>
+    <div class="row"><input type="text" id="broker" placeholder="Broker URL, e.g. https://agents.yourteam.dev" spellcheck="false"></div>
+  </div>
+
+  <div class="step">
+    <h2>2 · Folders coworkers may ask about</h2>
+    <div class="folders" id="folders"><div class="empty">No folders shared yet.</div></div>
+    <button class="secondary" id="add">Add Folder…</button>
+  </div>
+
+  <div class="step">
+    <h2>3 · Claude</h2>
+    <div class="status" id="claude-status"></div>
+  </div>
+
+  <div class="error" id="error"></div>
+  <button class="primary" id="enroll">Enroll This Mac</button>
+</div>
+
+<div class="wrap" id="success">
+  <div class="check">✓</div>
+  <h1 id="success-title">You're connected</h1>
+  <p>Look for the <b>speech-bubble icon in your menu bar</b> — that's where you pause answering, change shared folders, or leave entirely.</p>
+  <p>You'll get a notification whenever a coworker asks your agent something, and a full log stays on this Mac.</p>
+  <button class="primary" id="close">Done</button>
+</div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  let roots = [];
+
+  function renderFolders() {
+    const box = $("folders");
+    box.innerHTML = "";
+    if (!roots.length) {
+      box.innerHTML = '<div class="empty">No folders shared yet.</div>';
+      return;
+    }
+    for (const root of roots) {
+      const chip = document.createElement("div");
+      chip.className = "chip";
+      const label = document.createElement("span");
+      label.textContent = root;
+      const remove = document.createElement("button");
+      remove.textContent = "✕";
+      remove.title = "Remove";
+      remove.onclick = () => { roots = roots.filter((r) => r !== root); renderFolders(); };
+      chip.append(label, remove);
+      box.append(chip);
+    }
+  }
+
+  function renderClaude(signedIn) {
+    $("claude-status").innerHTML = signedIn
+      ? '<span class="ok">✓</span> Claude Code is signed in on this Mac.'
+      : '<span class="warn">⚠</span>&nbsp;Claude Code sign-in not detected — answers run on your Claude account, so <a id="claude-link">install &amp; sign in to Claude Code</a> first.';
+    const link = $("claude-link");
+    if (link) link.onclick = () => window.wa.openExternal("https://claude.com/claude-code");
+  }
+
+  function applyPrefill(data) {
+    if (data.enrolled) { showSuccess(data.hostName); return; }
+    if (data.token) $("token").value = data.token;
+    if (data.broker) $("broker").value = data.broker;
+    parseTokenField();
+    renderClaude(data.claudeSignedIn);
+  }
+
+  function parseTokenField() {
+    const raw = $("token").value.trim();
+    if (raw.startsWith("workspace-agent://")) {
+      try {
+        const url = new URL(raw);
+        const token = url.searchParams.get("token");
+        const broker = url.searchParams.get("broker");
+        if (token) $("token").value = token;
+        if (broker) $("broker").value = broker;
+      } catch {}
+    }
+  }
+  $("token").addEventListener("input", parseTokenField);
+
+  $("add").onclick = async () => {
+    const picked = await window.wa.pickFolders();
+    for (const dir of picked) if (!roots.includes(dir)) roots.push(dir);
+    renderFolders();
+  };
+
+  $("enroll").onclick = async () => {
+    const btn = $("enroll");
+    btn.disabled = true;
+    btn.textContent = "Enrolling…";
+    $("error").style.display = "none";
+    const result = await window.wa.enroll({
+      broker: $("broker").value,
+      token: $("token").value,
+      roots,
+    });
+    if (result.ok) {
+      showSuccess(result.hostName);
+    } else {
+      $("error").textContent = result.error;
+      $("error").style.display = "block";
+      btn.disabled = false;
+      btn.textContent = "Enroll This Mac";
+    }
+  };
+
+  function showSuccess(hostName) {
+    $("form").style.display = "none";
+    $("success").style.display = "block";
+    $("success-title").textContent = hostName ? `You're connected as “${hostName}”` : "You're connected";
+  }
+
+  $("close").onclick = () => window.wa.closeWindow();
+
+  window.wa.onPrefill(applyPrefill);
+  window.wa.prefill().then(applyPrefill);
+</script>
+</body>
+</html>

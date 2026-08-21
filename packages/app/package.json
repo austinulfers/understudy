@@ -1,0 +1,70 @@
+{
+  "name": "workspace-agent-app",
+  "productName": "Workspace Agent",
+  "version": "0.1.1",
+  "private": true,
+  "type": "module",
+  "main": "dist/main.js",
+  "scripts": {
+    "build": "node build.mjs",
+    "dev": "node build.mjs && electron .",
+    "dist": "node build.mjs && electron-builder --mac",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@anthropic-ai/claude-agent-sdk": "^0.3.237"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@types/ws": "^8.5.12",
+    "@workspace-agent/daemon": "workspace:*",
+    "@workspace-agent/shared": "workspace:*",
+    "electron": "^38.0.0",
+    "electron-builder": "^26.0.0",
+    "esbuild": "^0.25.0",
+    "typescript": "^5.7.0",
+    "ws": "^8.18.0",
+    "zod": "^4.4.3"
+  },
+  "build": {
+    "appId": "ai.trainloop.workspace-agent",
+    "productName": "Workspace Agent",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "ui/**/*",
+      "icons/**/*"
+    ],
+    "asar": false,
+    "protocols": [
+      {
+        "name": "Workspace Agent Enrollment",
+        "schemes": [
+          "workspace-agent"
+        ]
+      }
+    ],
+    "npmRebuild": false,
+    "mac": {
+      "category": "public.app-category.developer-tools",
+      "icon": "icons/app.icns",
+      "identity": null,
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64"
+          ]
+        }
+      ],
+      "extendInfo": {
+        "LSUIElement": true
+      }
+    },
+    "dmg": {
+      "title": "Workspace Agent"
+    }
+  }
+}
