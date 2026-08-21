@@ -28,6 +28,10 @@ const RESERVED_HOST_NAMES = new Set(["allow", "deny", "revoke", "team", "help", 
 
 export function buildHttpApp(): express.Express {
   const app = express();
+  // Behind the Cloudflare tunnel cloudflared dials in over plain HTTP from
+  // loopback, so req.protocol would read "http" and enrollment links would
+  // hand daemons a ws:// URL. Trust the loopback hop's X-Forwarded-Proto.
+  app.set("trust proxy", "loopback");
   app.use(express.json());
   app.use(express.urlencoded({ extended: false }));
   // Mac app installers, if the admin drops them here (see the token page).

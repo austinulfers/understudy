@@ -50,8 +50,10 @@ export class Hub {
       const deviceSecret = String(req.headers["x-device-secret"] ?? "");
       const host = deviceId && deviceSecret ? verifyDevice(deviceId, deviceSecret) : null;
       if (!host) {
-        socket.write("HTTP/1.1 401 Unauthorized\r\n\r\n");
-        socket.destroy();
+        // Must be a well-formed response with a length, or proxies in front of
+        // the broker (cloudflared) turn the aborted socket into a 502.
+        socket.write("HTTP/1.1 401 Unauthorized\r\nConnection: close\r\nContent-Length: 0\r\n\r\n");
+        socket.end();
         return;
       }
       wss.handleUpgrade(req, socket, head, (ws) => {

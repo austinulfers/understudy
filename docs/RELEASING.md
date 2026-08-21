@@ -134,16 +134,47 @@ never be.
 electron-builder imports the certificate into a throwaway keychain on the runner;
 there is no manual `security create-keychain` step.
 
+## Two notarization passes
+
+electron-builder signs the `.app`, notarizes it, staples the ticket, and *then*
+builds the DMG around it — but it leaves the DMG itself unsigned. The DMG is what
+people actually download, and Gatekeeper assesses it on mount, so the workflow
+signs, notarizes, and staples the DMG as a separate step afterwards.
+
+That means **two** round trips to Apple's notary service per release. Each has
+taken around 85 minutes for this app, so budget roughly 3 hours for a release
+run. The job's `timeout-minutes` is set accordingly.
+
+electron-builder deletes the throwaway keychain it creates, so the DMG step
+builds its own from the same `.p12`. Two things in that step are load-bearing and
+non-obvious:
+
+- The new keychain must be added to the **search list** (`security list-keychains
+  -d user -s …`). Trust evaluation only consults keychains on that list; without
+  it `codesign` fails with `errSecInternalComponent` and `find-identity` reports
+  `CSSMERR_TP_NOT_TRUSTED`.
+- `security set-key-partition-list` must run after the import, or `codesign`
+  blocks waiting on a keychain-access prompt that nobody is there to answer.
+
 ## What the workflow verifies
 
-After the build, before publishing, it checks the things that would otherwise
-only fail on a user's Mac:
+After both notarization passes, before publishing, it checks the things that
+would otherwise only fail on someone else's Mac:
+
+For the app:
 
 - `codesign --verify --deep --strict` — every nested binary is properly sealed.
 - Hardened runtime is actually enabled (`flags=…runtime`).
-- `xcrun stapler validate` — the notarization ticket is stapled into the app, so
-  it launches on a machine that has never seen it, even offline.
+- `xcrun stapler validate` — the ticket is stapled, so it launches on a machine
+  that has never seen it, even offline.
 - `spctl --assess --type execute` — the exact question Gatekeeper asks at launch.
+
+For the DMG:
+
+- `codesign --verify --strict`
+- `xcrun stapler validate`
+- `spctl --assess --type open --context context:primary-signature` — what
+  Gatekeeper asks when someone opens the downloaded disk image.
 
 Any of these failing fails the job, so a broken build can't reach a release.
 
