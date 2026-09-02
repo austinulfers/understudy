@@ -194,7 +194,7 @@ export function buildHttpApp(): express.Express {
     const a = Buffer.from(header);
     const b = Buffer.from(expected);
     if (a.length !== b.length || !timingSafeEqual(a, b)) {
-      res.set("WWW-Authenticate", 'Basic realm="workspace-agent"').status(401).send("Auth required");
+      res.set("WWW-Authenticate", 'Basic realm="understudy"').status(401).send("Auth required");
       return;
     }
     next();

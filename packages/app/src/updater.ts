@@ -1,6 +1,6 @@
 import { app, dialog, Notification, type MenuItemConstructorOptions } from "electron";
 import electronUpdater, { type ProgressInfo, type UpdateInfo } from "electron-updater";
-import { logLocal } from "@workspace-agent/daemon";
+import { logLocal } from "@understudy/daemon";
 
 // electron-updater is CommonJS and exposes `autoUpdater` through a getter that
 // Node's ESM loader cannot see as a named export, so it has to come off the default.
@@ -65,7 +65,7 @@ export function startUpdateChecks(listener: () => void): void {
     manual = false;
     void dialog.showMessageBox({
       type: "info",
-      message: "Workspace Agent is up to date",
+      message: "Understudy is up to date",
       detail: `Version ${app.getVersion()} is the latest.`,
     });
   });
@@ -85,7 +85,7 @@ export function startUpdateChecks(listener: () => void): void {
     if (notified === info.version || !Notification.isSupported()) return;
     notified = info.version;
     new Notification({
-      title: `Workspace Agent ${info.version} is ready`,
+      title: `Understudy ${info.version} is ready`,
       body: "Choose “Restart to Update” from the menu bar icon whenever convenient.",
     }).show();
   });

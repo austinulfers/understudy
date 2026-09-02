@@ -42,6 +42,8 @@ export const DENY_DIR_SEGMENTS: string[] = [
   ".kube",
   ".docker",
   ".claude",
+  ".understudy",
+  // The daemon's config directory under its pre-rename name.
   ".workspace-agent",
 ];
 

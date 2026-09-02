@@ -1,7 +1,7 @@
 /**
  * Offline smoke test: exercises enrollment, device auth, the WS hub,
  * path containment, and redaction — everything except Slack itself.
- * Run with: pnpm --filter @workspace-agent/broker smoke
+ * Run with: pnpm --filter @understudy/broker smoke
  */
 import { createServer } from "node:http";
 import * as os from "node:os";
@@ -14,7 +14,7 @@ process.env.ADMIN_TOKEN ||= "smoke";
 process.env.DB_PATH = path.join(os.tmpdir(), `wa-smoke-${Date.now()}.db`);
 process.env.PEER_ASKS_PER_QUERY = "2";
 
-const { checkPath, extractToolPaths, redactSecrets } = await import("@workspace-agent/shared");
+const { checkPath, extractToolPaths, redactSecrets } = await import("@understudy/shared");
 const db = await import("../src/db");
 const { buildHttpApp } = await import("../src/http");
 const { hub } = await import("../src/hub");

@@ -3,12 +3,12 @@
  * broker faked: one read-only question over a temp directory that nudges
  * the model to consult a (fake) peer agent. Spends one small Claude session
  * on your own sign-in (Haiku, a few turns). Run with:
- *   pnpm --filter @workspace-agent/daemon live
+ *   pnpm --filter @understudy/daemon live
  */
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
-import type { BrokerToDaemon, DaemonToBroker } from "@workspace-agent/shared";
+import type { BrokerToDaemon, DaemonToBroker } from "@understudy/shared";
 import { LOG_DIR } from "../src/config";
 import { handleQuery, resolvePeerResult } from "../src/sessions";
 

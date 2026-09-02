@@ -11,7 +11,7 @@ import {
   type BrokerToDaemon,
   type DaemonToBroker,
   type PeerInfo,
-} from "@workspace-agent/shared";
+} from "@understudy/shared";
 import type { DaemonConfig } from "./config";
 import { daemonEvents, type QueryEvent } from "./events";
 import { logLocal } from "./log";
@@ -162,7 +162,7 @@ async function runOne(config: DaemonConfig, msg: QueryMsg, send: Send): Promise<
   };
 
   notifyOwner(
-    "Workspace Agent",
+    "Understudy",
     msg.viaHost
       ? `${msg.viaHost}'s agent is asking your agent a question for ${msg.askerName}`
       : `${msg.askerName} is asking your agent a question`,

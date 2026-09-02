@@ -7,7 +7,7 @@ import {
   parseFrame,
   type BrokerToDaemon,
   type DaemonToBroker,
-} from "@workspace-agent/shared";
+} from "@understudy/shared";
 import { touchHost, verifyDevice } from "./db";
 import { config } from "./config";
 

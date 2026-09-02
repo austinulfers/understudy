@@ -2,12 +2,12 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>Workspace Agent</title>
+<title>Understudy</title>
 <style>
   :root {
-    --teal: #0e7c86;
-    --teal-deep: #0a5d65;
-    --ink: #1b2428;
+    --brand: #8870fc;
+    --brand-deep: #5b44d9;
+    --ink: #0e142d;
     --muted: #5b6a70;
     --line: #dde4e5;
     --bg: #f6f8f8;
@@ -33,7 +33,7 @@
     border: none; background: none; padding: 7px 14px; font-size: 13px; font-weight: 600;
     color: var(--muted); cursor: pointer; border-radius: 8px 8px 0 0;
   }
-  nav button.active { background: #fff; color: var(--teal-deep); border: 1px solid var(--line); border-bottom-color: #fff; }
+  nav button.active { background: #fff; color: var(--brand-deep); border: 1px solid var(--line); border-bottom-color: #fff; }
   main { background: #fff; border-top: 1px solid var(--line); margin-top: -1px; min-height: calc(100vh - 110px); padding: 18px 20px; }
   .tab { display: none; }
   .tab.active { display: block; }
@@ -54,26 +54,26 @@
     width: 100%; padding: 8px 11px; border: 1px solid var(--line); border-radius: 8px;
     font-size: 13px; outline: none; -webkit-user-select: text; user-select: text;
   }
-  .search input:focus { border-color: var(--teal); }
+  .search input:focus { border-color: var(--brand); }
   .results {
     position: absolute; left: 0; right: 0; top: 100%; background: #fff; border: 1px solid var(--line);
     border-radius: 8px; margin-top: 4px; box-shadow: 0 6px 18px rgba(0,0,0,.08); z-index: 5;
     max-height: 220px; overflow-y: auto;
   }
   .results div { padding: 8px 12px; cursor: pointer; }
-  .results div:hover { background: #eef6f7; }
+  .results div:hover { background: #f1eeff; }
 
   /* conversations */
   .thread { display: flex; align-items: baseline; gap: 10px; padding: 9px 4px; border-bottom: 1px solid var(--line); cursor: pointer; }
-  .thread:hover { background: #f4f9f9; }
+  .thread:hover { background: #f5f3ff; }
   .thread .who { font-weight: 600; }
   .thread .when { margin-left: auto; color: var(--muted); font-size: 12px; white-space: nowrap; }
   .msg { border: 1px solid var(--line); border-left-width: 3px; border-radius: 8px; padding: 9px 12px; margin: 8px 0; white-space: pre-wrap; -webkit-user-select: text; user-select: text; }
-  .msg.user { border-left-color: var(--teal); }
+  .msg.user { border-left-color: var(--brand); }
   .msg.assistant { border-left-color: #9aa7ac; }
   .msg.system { border-left-color: var(--bad); }
   .msg .meta { color: var(--muted); font-size: 11px; margin-bottom: 3px; }
-  .back { border: none; background: none; color: var(--teal-deep); cursor: pointer; font-size: 13px; font-weight: 600; padding: 0 0 10px; }
+  .back { border: none; background: none; color: var(--brand-deep); cursor: pointer; font-size: 13px; font-weight: 600; padding: 0 0 10px; }
 
   /* settings */
   .field { margin: 14px 0; }
@@ -83,7 +83,7 @@
     -webkit-user-select: text; user-select: text;
   }
   .save {
-    padding: 8px 18px; border: none; border-radius: 8px; background: var(--teal); color: #fff;
+    padding: 8px 18px; border: none; border-radius: 8px; background: var(--brand-deep); color: #fff;
     font-weight: 650; font-size: 13px; cursor: pointer;
   }
   .save:disabled { opacity: .6; }
@@ -95,7 +95,7 @@
 <body>
 <header>
   <span class="dot" id="dot"></span>
-  <h1 id="title">Workspace Agent</h1>
+  <h1 id="title">Understudy</h1>
   <span class="usage" id="usage"></span>
 </header>
 <nav>
@@ -161,14 +161,14 @@
   }
 
   async function refresh() {
-    const res = await window.wa.panelOverview();
+    const res = await window.understudy.panelOverview();
     if (!res.ok) {
-      $("title").textContent = "Workspace Agent";
+      $("title").textContent = "Understudy";
       $("people-error").textContent = res.error;
       return;
     }
     overview = res.data;
-    $("title").textContent = "Workspace Agent — “" + overview.hostName + "”";
+    $("title").textContent = "Understudy — “" + overview.hostName + "”";
     $("dot").className = "dot" + (overview.online ? " on" : "");
     const cap = overview.dailyLimit ?? overview.defaultDailyLimit;
     $("usage").textContent = overview.usageToday + " of " + cap + " questions used today";
@@ -195,7 +195,7 @@
         const remove = document.createElement("button");
         remove.textContent = "Remove";
         remove.onclick = async () => {
-          const res = await window.wa.panelAcl("remove", person.slackUserId);
+          const res = await window.understudy.panelAcl("remove", person.slackUserId);
           $("people-error").textContent = res.ok ? "" : res.error;
           refresh();
         };
@@ -211,7 +211,7 @@
     const q = $("user-search").value.trim();
     if (q.length < 2) { $("user-results").style.display = "none"; return; }
     searchTimer = setTimeout(async () => {
-      const res = await window.wa.panelSearchUsers(q);
+      const res = await window.understudy.panelSearchUsers(q);
       const box = $("user-results");
       box.innerHTML = "";
       if (!res.ok) { $("people-error").textContent = res.error; return; }
@@ -224,7 +224,7 @@
         row.onclick = async () => {
           box.style.display = "none";
           $("user-search").value = "";
-          const added = await window.wa.panelAcl("add", user.id);
+          const added = await window.understudy.panelAcl("add", user.id);
           $("people-error").textContent = added.ok ? "" : added.error;
           refresh();
         };
@@ -261,7 +261,7 @@
   }
 
   async function openThread(threadKey) {
-    const res = await window.wa.panelTranscript(threadKey);
+    const res = await window.understudy.panelTranscript(threadKey);
     if (!res.ok) { $("convos-error").textContent = res.error; return; }
     $("convos-error").textContent = "";
     const box = $("thread-messages");
@@ -299,7 +299,7 @@
   }
 
   $("accept-peers").onchange = async () => {
-    const res = await window.wa.panelPeers($("accept-peers").checked);
+    const res = await window.understudy.panelPeers($("accept-peers").checked);
     $("settings-error").textContent = res.ok ? "" : res.error;
     refresh();
   };
@@ -308,7 +308,7 @@
     const custom = document.querySelector('input[name=limit][value=custom]').checked;
     const value = custom ? Number($("custom-limit").value) : null;
     $("save-limit").disabled = true;
-    const res = await window.wa.panelLimit(value);
+    const res = await window.understudy.panelLimit(value);
     $("save-limit").disabled = false;
     $("settings-error").textContent = res.ok ? "" : res.error;
     refresh();

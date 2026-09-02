@@ -1,13 +1,13 @@
 display_information:
-  name: Workspace Agent
+  name: Understudy
   description: Ask a coworker's read-only Claude about the code on their machine.
-  background_color: "#0e7c86"
+  background_color: "#8870fc"
 features:
   app_home:
     messages_tab_enabled: true
     messages_tab_read_only_enabled: false
   bot_user:
-    display_name: Workspace Agent
+    display_name: Understudy
     always_online: false
   slash_commands:
     - command: /ask

@@ -1,7 +1,7 @@
 {
-  "name": "workspace-agent-app",
-  "productName": "Workspace Agent",
-  "version": "0.1.6",
+  "name": "understudy-app",
+  "productName": "Understudy",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "main": "dist/main.js",
@@ -19,8 +19,8 @@
   "devDependencies": {
     "@types/node": "^22.10.0",
     "@types/ws": "^8.5.12",
-    "@workspace-agent/daemon": "workspace:*",
-    "@workspace-agent/shared": "workspace:*",
+    "@understudy/daemon": "workspace:*",
+    "@understudy/shared": "workspace:*",
     "electron": "^38.0.0",
     "electron-builder": "^26.0.0",
     "esbuild": "^0.25.0",
@@ -29,12 +29,12 @@
     "zod": "^4.4.3"
   },
   "build": {
-    "appId": "ai.trainloop.workspace-agent",
-    "productName": "Workspace Agent",
+    "appId": "ai.trainloop.understudy",
+    "productName": "Understudy",
     "directories": {
       "output": "release"
     },
-    "artifactName": "Workspace-Agent-${version}-${arch}.${ext}",
+    "artifactName": "Understudy-${version}-${arch}.${ext}",
     "publish": [
       {
         "provider": "github",
@@ -50,8 +50,9 @@
     "asar": false,
     "protocols": [
       {
-        "name": "Workspace Agent Enrollment",
+        "name": "Understudy Enrollment",
         "schemes": [
+          "understudy",
           "workspace-agent"
         ]
       }
@@ -84,7 +85,7 @@
       }
     },
     "dmg": {
-      "title": "Workspace Agent"
+      "title": "Understudy"
     }
   }
 }

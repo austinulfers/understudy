@@ -91,7 +91,7 @@ function helpText(userId: string): string {
   return [
     "Ask a coworker's read-only Claude a question about the code on their machine.",
     "",
-    "*In a channel:* `/ask jane where does token refresh happen?` or mention me: `@Workspace Agent jane: …`",
+    "*In a channel:* `/ask jane where does token refresh happen?` or mention me: `@Understudy jane: …`",
     "*In this DM:* `jane: your question` — after that, just keep typing and I'll keep asking jane.",
     "*DM commands:* `hosts` (list agents), `reset` (forget the current agent + conversation), `help`",
     "*If you own an agent:* `allow @name` / `deny @name` control who may ask it; `team` shows who has access.",
@@ -170,7 +170,7 @@ app.command("/ask", async ({ command, ack, respond, client }) => {
   } catch {
     await respond({
       response_type: "ephemeral",
-      text: "I can't post here — `/invite @Workspace Agent` to this channel first, or DM me instead.",
+      text: "I can't post here — `/invite @Understudy` to this channel first, or DM me instead.",
     });
     return;
   }

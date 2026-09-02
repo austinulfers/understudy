@@ -21,7 +21,7 @@ import {
   type DaemonControl,
   type DaemonState,
   type QueryEvent,
-} from "@workspace-agent/daemon";
+} from "@understudy/daemon";
 import { installUpdate, startUpdateChecks, updateMenuItems } from "./updater";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -42,12 +42,20 @@ const recent: QueryEvent[] = [];
 
 // ---------- single instance + enrollment deep links ----------
 
+/**
+ * URL schemes that open the app with an enrollment link. The first is current;
+ * the second is the one the app registered before it was renamed Understudy,
+ * kept so links minted before the rename still open the app.
+ */
+const ENROLL_SCHEMES = ["understudy", "workspace-agent"];
+const isEnrollLink = (candidate: string): boolean => ENROLL_SCHEMES.some((scheme) => candidate.startsWith(`${scheme}://`));
+
 if (!app.requestSingleInstanceLock()) {
   app.quit();
 }
 
 app.on("second-instance", (_event, argv) => {
-  const link = argv.find((a) => a.startsWith("workspace-agent://"));
+  const link = argv.find(isEnrollLink);
   if (link) handleEnrollLink(link);
   else showOnboarding();
 });
@@ -60,7 +68,7 @@ app.on("open-url", (event, url) => {
 function handleEnrollLink(link: string): void {
   try {
     const url = new URL(link);
-    if (url.protocol !== "workspace-agent:") return;
+    if (!ENROLL_SCHEMES.includes(url.protocol.replace(/:$/, ""))) return;
     pendingPrefill = {
       broker: url.searchParams.get("broker") ?? undefined,
       token: url.searchParams.get("token") ?? undefined,
@@ -112,7 +120,7 @@ function startDaemon(): void {
       rebuildMenu();
       void dialog.showMessageBox({
         type: "warning",
-        message: "Workspace Agent access was revoked",
+        message: "Understudy access was revoked",
         detail: "The admin revoked this Mac's access. The app will stay idle; ask the admin for a new enrollment link if this is unexpected.",
       });
     },
@@ -148,7 +156,7 @@ function rebuildMenu(): void {
   if (!config) {
     items.push({ label: "Set Up…", click: () => showOnboarding() });
   } else {
-    items.push({ label: "Open Workspace Agent…", click: () => showPanel() });
+    items.push({ label: "Open Understudy…", click: () => showPanel() });
     items.push({ type: "separator" });
     items.push({
       label: "Pause Answering",
@@ -203,7 +211,7 @@ function rebuildMenu(): void {
   }
 
   items.push({ type: "separator" }, ...updateMenuItems(restartToUpdate));
-  items.push({ type: "separator" }, { label: "Quit Workspace Agent", role: "quit" });
+  items.push({ type: "separator" }, { label: "Quit Understudy", role: "quit" });
   tray.setContextMenu(Menu.buildFromTemplate(items));
 }
 
@@ -291,7 +299,7 @@ function showOnboarding(): void {
     height: 720,
     resizable: false,
     fullscreenable: false,
-    title: "Workspace Agent",
+    title: "Understudy",
     webPreferences: { preload: PRELOAD, contextIsolation: true, nodeIntegration: false },
   });
   void onboarding.loadFile(UI_HTML);
@@ -313,7 +321,7 @@ function showPanel(): void {
     height: 620,
     minWidth: 640,
     minHeight: 480,
-    title: "Workspace Agent",
+    title: "Understudy",
     webPreferences: { preload: PRELOAD, contextIsolation: true, nodeIntegration: false },
   });
   void panel.loadFile(PANEL_HTML);
@@ -413,7 +421,7 @@ ipcMain.handle("close-onboarding", () => onboarding?.close());
 
 // ---------- app lifecycle ----------
 
-app.setAsDefaultProtocolClient("workspace-agent");
+for (const scheme of ENROLL_SCHEMES) app.setAsDefaultProtocolClient(scheme);
 
 app.on("window-all-closed", () => {
   // Menu-bar app: keep running with no windows.
@@ -432,7 +440,7 @@ async function offerMoveToApplications(): Promise<boolean> {
     buttons: ["Move to Applications", "Not Now"],
     defaultId: 0,
     cancelId: 1,
-    message: "Move Workspace Agent to the Applications folder?",
+    message: "Move Understudy to the Applications folder?",
     detail: "It is running from somewhere else. Automatic updates are only reliable from Applications; it will reopen from there.",
   });
   if (choice.response !== 0) return false;
@@ -451,7 +459,7 @@ void app.whenReady().then(async () => {
   const icon = nativeImage.createFromPath(TRAY_ICON);
   icon.setTemplateImage(true);
   tray = new Tray(icon);
-  tray.setToolTip("Workspace Agent");
+  tray.setToolTip("Understudy");
 
   config = loadConfig();
   rebuildMenu();

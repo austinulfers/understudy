@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="317 40 460 414" width="460" height="414" role="img" aria-label="Understudy">
+  <title>Understudy</title>
+  <defs>
+    <!-- speech bubble: 340x305, corner r=95, tail bottom-left -->
+    <path id="bubble" d="M0 95 L0 210 C0 248 20 258 20 275 L18 308 C16 322 13 334 7 343 C33 343 63 330 88 305 L245 305 A95 95 0 0 0 340 210 L340 95 A95 95 0 0 0 245 0 L95 0 A95 95 0 0 0 0 95 Z"/>
+    <!-- 20px gap around the front bubble, cut out of the back bubble -->
+    <mask id="gap" maskUnits="userSpaceOnUse" x="317" y="40" width="460" height="414">
+      <rect x="317" y="40" width="460" height="414" fill="#fff"/>
+      <use xlink:href="#bubble" transform="translate(317 111)" fill="#000" stroke="#000" stroke-width="40" stroke-linejoin="round"/>
+    </mask>
+    <!-- eyes + smile cut out of the front bubble -->
+    <mask id="face" maskUnits="userSpaceOnUse" x="317" y="40" width="460" height="414">
+      <rect x="317" y="40" width="460" height="414" fill="#fff"/>
+      <rect x="396" y="199" width="35" height="71" rx="17.5" fill="#000"/>
+      <rect x="543" y="199" width="35" height="71" rx="17.5" fill="#000"/>
+      <path d="M456 306 Q487 325 518 306" fill="none" stroke="#000" stroke-width="17" stroke-linecap="round"/>
+    </mask>
+  </defs>
+  <!-- back bubble (mirrored, tail bottom-right) -->
+  <g mask="url(#gap)">
+    <use xlink:href="#bubble" transform="translate(777 40) scale(-1 1)" fill="#8870FC"/>
+  </g>
+  <!-- front bubble -->
+  <g mask="url(#face)">
+    <use xlink:href="#bubble" transform="translate(317 111)" fill="#0E142D"/>
+  </g>
+</svg>

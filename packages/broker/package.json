@@ -1,5 +1,5 @@
 {
-  "name": "@workspace-agent/broker",
+  "name": "@understudy/broker",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -11,7 +11,7 @@
   "dependencies": {
     "@slack/bolt": "^5.0.0",
     "@slack/web-api": "^8.0.0",
-    "@workspace-agent/shared": "workspace:*",
+    "@understudy/shared": "workspace:*",
     "better-sqlite3": "^13.0.3",
     "express": "^5.2.1",
     "ws": "^8.18.0",

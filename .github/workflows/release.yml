@@ -107,11 +107,11 @@ jobs:
           APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
           APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
         run: |
-          pnpm --filter workspace-agent-app build
+          pnpm --filter understudy-app build
           # `publish` in the build config names the GitHub repo the app's updater
           # reads from and makes electron-builder write latest-mac.yml. Uploading
           # is this workflow's own job (the last step), hence --publish never.
-          pnpm --filter workspace-agent-app exec electron-builder --mac --publish never
+          pnpm --filter understudy-app exec electron-builder --mac --publish never
 
       # electron-builder notarizes and staples the .app, then builds the DMG from
       # it — but leaves the DMG itself unsigned. The DMG is what people actually
@@ -190,7 +190,7 @@ jobs:
         run: |
           set -euo pipefail
           shopt -s nullglob
-          app="packages/app/release/mac-arm64/Workspace Agent.app"
+          app="packages/app/release/mac-arm64/Understudy.app"
           dmgs=(packages/app/release/*.dmg); dmg="${dmgs[0]}"
           zips=(packages/app/release/*.zip)
           if [ ${#zips[@]} -ne 1 ]; then
@@ -228,9 +228,9 @@ jobs:
           unzipped="$RUNNER_TEMP/zip-check"
           rm -rf "$unzipped" && mkdir -p "$unzipped"
           ditto -x -k "$zip" "$unzipped"
-          codesign --verify --deep --strict --verbose=2 "$unzipped/Workspace Agent.app"
-          xcrun stapler validate "$unzipped/Workspace Agent.app"
-          spctl --assess --type execute --verbose=4 "$unzipped/Workspace Agent.app"
+          codesign --verify --deep --strict --verbose=2 "$unzipped/Understudy.app"
+          xcrun stapler validate "$unzipped/Understudy.app"
+          spctl --assess --type execute --verbose=4 "$unzipped/Understudy.app"
           echo "::endgroup::"
 
           # electron-updater refuses a download whose sha512 disagrees with the manifest.
@@ -243,7 +243,7 @@ jobs:
       - name: Upload the installer and update files as a build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: workspace-agent-${{ steps.meta.outputs.version }}-arm64
+          name: understudy-${{ steps.meta.outputs.version }}-arm64
           path: |
             packages/app/release/*.dmg
             packages/app/release/*.zip
@@ -284,14 +284,15 @@ jobs:
 
           Apple Silicon (arm64) only.
 
-          Download the `.dmg` below, open it, and drag **Workspace Agent** to Applications.
+          Download the `.dmg` below, open it, and drag **Understudy** to Applications.
 
           Both the disk image and the app inside are signed with a Developer ID
           certificate and notarized by Apple, so they open without any Gatekeeper
           workaround. The app runs in the menu bar and has no Dock icon.
 
-          **Already installed?** Nothing to do. Workspace Agent 0.1.5 and later
-          update themselves: the app downloads new versions in the background and
+          **Already installed?** Nothing to do. Copies from 0.1.5 on, whether they
+          were installed as Workspace Agent or as Understudy, update themselves:
+          the app downloads new versions in the background and
           offers **Restart to Update** from its menu bar icon. The `.zip` and
           `latest-mac.yml` below are what it reads; you don't need them.
 
@@ -299,7 +300,7 @@ jobs:
           NOTES
 
           gh release create "$TAG" \
-            --title "Workspace Agent $VERSION" \
+            --title "Understudy $VERSION" \
             --target "$GITHUB_SHA" \
             --notes-file "$RUNNER_TEMP/notes.md" \
             --generate-notes \

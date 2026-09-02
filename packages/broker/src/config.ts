@@ -18,7 +18,7 @@ export const config = {
     .map((s) => s.trim())
     .filter(Boolean),
   port: Number(process.env.PORT ?? 8787),
-  dbPath: process.env.DB_PATH ?? "./workspace-agent.db",
+  dbPath: process.env.DB_PATH ?? "./understudy.db",
   /** Queries per host per day unless the host row overrides it. */
   defaultDailyLimit: Number(process.env.DEFAULT_DAILY_LIMIT ?? 50),
   /** Queries per asker per minute across all hosts. */

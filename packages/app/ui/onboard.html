@@ -2,12 +2,13 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>Workspace Agent</title>
+<title>Understudy</title>
 <style>
   :root {
-    --teal: #0e7c86;
-    --teal-deep: #0a5d65;
-    --ink: #1b2428;
+    --brand: #8870fc;
+    --brand-deep: #5b44d9;
+    --brand-deeper: #4a35bf;
+    --ink: #0e142d;
     --muted: #5b6a70;
     --line: #dde4e5;
     --bg: #f6f8f8;
@@ -33,14 +34,14 @@
   .step { margin-bottom: 20px; }
   .step h2 {
     font-size: 11px; letter-spacing: .08em; text-transform: uppercase;
-    color: var(--teal-deep); margin: 0 0 8px; font-weight: 650;
+    color: var(--brand-deep); margin: 0 0 8px; font-weight: 650;
   }
   input[type=text] {
     width: 100%; padding: 9px 11px; border: 1px solid var(--line); border-radius: 8px;
     font-size: 13px; background: #fff; color: var(--ink); outline: none;
     -webkit-user-select: text; user-select: text;
   }
-  input[type=text]:focus { border-color: var(--teal); box-shadow: 0 0 0 3px rgba(14,124,134,.15); }
+  input[type=text]:focus { border-color: var(--brand); box-shadow: 0 0 0 3px rgba(136,112,252,.25); }
   .hint { color: var(--muted); font-size: 12px; margin-top: 6px; }
   .row { display: flex; gap: 8px; margin-top: 8px; }
   .folders { display: flex; flex-direction: column; gap: 6px; }
@@ -56,28 +57,28 @@
   .chip button:hover { color: #a33; }
   .empty { color: var(--muted); font-size: 13px; font-style: italic; }
   button.secondary {
-    margin-top: 8px; padding: 8px 14px; border: 1px solid var(--teal); border-radius: 8px;
-    background: #fff; color: var(--teal-deep); font-size: 13px; font-weight: 600; cursor: pointer;
+    margin-top: 8px; padding: 8px 14px; border: 1px solid var(--brand); border-radius: 8px;
+    background: #fff; color: var(--brand-deep); font-size: 13px; font-weight: 600; cursor: pointer;
   }
-  button.secondary:hover { background: #eef6f7; }
+  button.secondary:hover { background: #f1eeff; }
   .status { display: flex; align-items: center; gap: 8px; font-size: 13px; }
   .status .ok { color: var(--ok); }
   .status .warn { color: var(--warn); }
-  .status a { color: var(--teal-deep); cursor: pointer; text-decoration: underline; }
+  .status a { color: var(--brand-deep); cursor: pointer; text-decoration: underline; }
   .error {
     display: none; background: #f7dede; color: #8a2020; border-radius: 8px;
     padding: 10px 12px; font-size: 13px; margin-bottom: 12px;
   }
   button.primary {
     width: 100%; padding: 12px; border: none; border-radius: 10px;
-    background: var(--teal); color: #fff; font-size: 15px; font-weight: 650; cursor: pointer;
+    background: var(--brand-deep); color: #fff; font-size: 15px; font-weight: 650; cursor: pointer;
   }
-  button.primary:hover { background: var(--teal-deep); }
+  button.primary:hover { background: var(--brand-deeper); }
   button.primary:disabled { opacity: .6; cursor: default; }
   /* success view */
   #success { display: none; text-align: center; padding-top: 40px; }
   #success .check {
-    width: 76px; height: 76px; border-radius: 50%; background: var(--teal);
+    width: 76px; height: 76px; border-radius: 50%; background: var(--brand-deep);
     color: #fff; font-size: 40px; line-height: 76px; margin: 0 auto 18px;
   }
   #success h1 { margin-bottom: 6px; }
@@ -88,15 +89,24 @@
 <body>
 <div class="wrap" id="form">
   <header>
-    <svg width="40" height="40" viewBox="0 0 1024 1024"><rect width="1024" height="1024" rx="184" fill="#0e7c86"/><g fill="none" stroke="#a7e6ec" stroke-width="40" stroke-linecap="round"><path d="M 790 230 A 70 70 0 0 1 860 300"/><path d="M 790 166 A 134 134 0 0 1 924 300"/></g><circle cx="790" cy="300" r="32" fill="#fff"/><rect x="180" y="330" width="580" height="400" rx="100" fill="#fff"/><path d="M 292 726 C 288 792, 246 844, 186 868 C 292 852, 362 800, 396 728 Z" fill="#fff"/><polyline points="330,460 430,545 330,630" fill="none" stroke="#0e7c86" stroke-width="56" stroke-linecap="round" stroke-linejoin="round"/><rect x="480" y="592" width="150" height="52" rx="26" fill="#0e7c86"/></svg>
-    <h1>Workspace Agent</h1>
+    <!-- assets/mark.svg -->
+    <svg width="44" height="40" viewBox="317 40 460 414" aria-hidden="true">
+      <defs>
+        <path id="bubble" d="M0 95 L0 210 C0 248 20 258 20 275 L18 308 C16 322 13 334 7 343 C33 343 63 330 88 305 L245 305 A95 95 0 0 0 340 210 L340 95 A95 95 0 0 0 245 0 L95 0 A95 95 0 0 0 0 95 Z"/>
+        <mask id="gap" maskUnits="userSpaceOnUse" x="317" y="40" width="460" height="414"><rect x="317" y="40" width="460" height="414" fill="#fff"/><use href="#bubble" transform="translate(317 111)" fill="#000" stroke="#000" stroke-width="40" stroke-linejoin="round"/></mask>
+        <mask id="face" maskUnits="userSpaceOnUse" x="317" y="40" width="460" height="414"><rect x="317" y="40" width="460" height="414" fill="#fff"/><rect x="396" y="199" width="35" height="71" rx="17.5" fill="#000"/><rect x="543" y="199" width="35" height="71" rx="17.5" fill="#000"/><path d="M456 306 Q487 325 518 306" fill="none" stroke="#000" stroke-width="17" stroke-linecap="round"/></mask>
+      </defs>
+      <g mask="url(#gap)"><use href="#bubble" transform="translate(777 40) scale(-1 1)" fill="var(--brand)"/></g>
+      <g mask="url(#face)"><use href="#bubble" transform="translate(317 111)" fill="var(--ink)"/></g>
+    </svg>
+    <h1>Understudy</h1>
   </header>
   <p class="sub">Let coworkers ask questions about your code from Slack — read-only, only in folders you choose, and you see everything.</p>
 
   <div class="step">
     <h2>1 · Enrollment link</h2>
     <input type="text" id="token" placeholder="Paste the link or token you were sent" spellcheck="false">
-    <div class="hint">It looks like <b>workspace-agent://enroll?…</b> or a short code. Links fill everything in automatically.</div>
+    <div class="hint">It looks like <b>understudy://enroll?…</b> or a short code. Links fill everything in automatically.</div>
     <div class="row"><input type="text" id="broker" placeholder="Broker URL, e.g. https://agents.yourteam.dev" spellcheck="false"></div>
   </div>
 
@@ -118,7 +128,7 @@
 <div class="wrap" id="success">
   <div class="check">✓</div>
   <h1 id="success-title">You're connected</h1>
-  <p>Look for the <b>speech-bubble icon in your menu bar</b> — that's where you pause answering, change shared folders, or leave entirely.</p>
+  <p>Look for the <b>two speech bubbles in your menu bar</b> — that's where you pause answering, change shared folders, or leave entirely.</p>
   <p>You'll get a notification whenever a coworker asks your agent something, and a full log stays on this Mac.</p>
   <button class="primary" id="close">Done</button>
 </div>
@@ -153,7 +163,7 @@
       ? '<span class="ok">✓</span> Claude Code is signed in on this Mac.'
       : '<span class="warn">⚠</span>&nbsp;Claude Code sign-in not detected — answers run on your Claude account, so <a id="claude-link">install &amp; sign in to Claude Code</a> first.';
     const link = $("claude-link");
-    if (link) link.onclick = () => window.wa.openExternal("https://claude.com/claude-code");
+    if (link) link.onclick = () => window.understudy.openExternal("https://claude.com/claude-code");
   }
 
   function applyPrefill(data) {
@@ -166,7 +176,8 @@
 
   function parseTokenField() {
     const raw = $("token").value.trim();
-    if (raw.startsWith("workspace-agent://")) {
+    // understudy:// links, plus the workspace-agent:// ones minted before the rename
+    if (/^(understudy|workspace-agent):\/\//.test(raw)) {
       try {
         const url = new URL(raw);
         const token = url.searchParams.get("token");
@@ -179,7 +190,7 @@
   $("token").addEventListener("input", parseTokenField);
 
   $("add").onclick = async () => {
-    const picked = await window.wa.pickFolders();
+    const picked = await window.understudy.pickFolders();
     for (const dir of picked) if (!roots.includes(dir)) roots.push(dir);
     renderFolders();
   };
@@ -189,7 +200,7 @@
     btn.disabled = true;
     btn.textContent = "Enrolling…";
     $("error").style.display = "none";
-    const result = await window.wa.enroll({
+    const result = await window.understudy.enroll({
       broker: $("broker").value,
       token: $("token").value,
       roots,
@@ -210,10 +221,10 @@
     $("success-title").textContent = hostName ? `You're connected as “${hostName}”` : "You're connected";
   }
 
-  $("close").onclick = () => window.wa.closeWindow();
+  $("close").onclick = () => window.understudy.closeWindow();
 
-  window.wa.onPrefill(applyPrefill);
-  window.wa.prefill().then(applyPrefill);
+  window.understudy.onPrefill(applyPrefill);
+  window.understudy.prefill().then(applyPrefill);
 </script>
 </body>
 </html>

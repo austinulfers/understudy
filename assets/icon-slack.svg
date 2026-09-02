@@ -1,32 +1,22 @@
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 1024 1024" width="1024" height="1024" role="img" aria-label="Understudy app icon: two speech bubbles, the front one smiling">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 1024 1024" width="1024" height="1024" role="img" aria-label="Understudy Slack app icon">
   <title>Understudy</title>
-  <!-- macOS app icon on Apple's 1024 grid: the rounded square is 824 wide with
-       a 100px margin on every side, and carries the same soft shadow as Apple's own icons. -->
+  <!-- Slack app icon: a full-bleed square; Slack rounds the corners itself. -->
   <defs>
     <path id="bubble" d="M0 95 L0 210 C0 248 20 258 20 275 L18 308 C16 322 13 334 7 343 C33 343 63 330 88 305 L245 305 A95 95 0 0 0 340 210 L340 95 A95 95 0 0 0 245 0 L95 0 A95 95 0 0 0 0 95 Z"/>
-    <!-- 20px gap around the front bubble, cut out of the back bubble -->
     <mask id="gap" maskUnits="userSpaceOnUse" x="277" y="0" width="540" height="500">
       <rect x="277" y="0" width="540" height="500" fill="#fff"/>
       <use xlink:href="#bubble" transform="translate(317 111)" fill="#000" stroke="#000" stroke-width="40" stroke-linejoin="round"/>
     </mask>
-    <!-- eyes + smile cut out of the front bubble -->
     <mask id="face" maskUnits="userSpaceOnUse" x="277" y="0" width="540" height="500">
       <rect x="277" y="0" width="540" height="500" fill="#fff"/>
       <rect x="396" y="199" width="35" height="71" rx="17.5" fill="#000"/>
       <rect x="543" y="199" width="35" height="71" rx="17.5" fill="#000"/>
       <path d="M456 306 Q487 325 518 306" fill="none" stroke="#000" stroke-width="17" stroke-linecap="round"/>
     </mask>
-    <filter id="shadow" x="-10%" y="-10%" width="120%" height="125%">
-      <feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#0E142D" flood-opacity=".28"/>
-    </filter>
   </defs>
-
-  <!-- ground -->
-  <rect x="100" y="100" width="824" height="824" rx="186" fill="#ffffff" filter="url(#shadow)"/>
-  <rect x="100.5" y="100.5" width="823" height="823" rx="186" fill="none" stroke="#0E142D" stroke-opacity=".06"/>
-
-  <!-- the mark, 460x414 in its own coordinates, centred and scaled to 552px wide -->
-  <g transform="translate(512 512) scale(1.2) translate(-547 -247)">
+  <rect width="1024" height="1024" fill="#ffffff"/>
+  <!-- the mark, 460x414 in its own coordinates, centred and scaled to 621px wide -->
+  <g transform="translate(512 512) scale(1.35) translate(-547 -247)">
     <g mask="url(#gap)">
       <use xlink:href="#bubble" transform="translate(777 40) scale(-1 1)" fill="#8870FC"/>
     </g>

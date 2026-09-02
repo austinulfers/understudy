@@ -9,7 +9,7 @@ import {
 } from "./config";
 import { runDaemon } from "./connection";
 
-const USAGE = `workspace-agent — read-only Claude agent for your machine, reachable from Slack
+const USAGE = `understudy — read-only Claude agent for your machine, reachable from Slack
 
 Usage:
   enroll --broker <url> --token <token> --root <dir> [--root <dir> ...]

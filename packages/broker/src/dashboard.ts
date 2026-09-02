@@ -25,8 +25,8 @@ function page(title: string, body: string): string {
 <title>${esc(title)}</title>
 <style>
   *{box-sizing:border-box}
-  body{font-family:system-ui,sans-serif;max-width:960px;margin:2rem auto;padding:0 1rem;color:#1b2428;background:#f6f8f8;line-height:1.5;overflow-wrap:break-word}
-  h1,h2{font-weight:650} a{color:#0e7c86}
+  body{font-family:system-ui,sans-serif;max-width:960px;margin:2rem auto;padding:0 1rem;color:#0e142d;background:#f6f8f8;line-height:1.5;overflow-wrap:break-word}
+  h1,h2{font-weight:650} a{color:#5b44d9}
   /* Tables scroll inside their own box so narrow windows never clip the page. */
   .table-wrap{overflow-x:auto;background:#fff;border:1px solid #dde4e5;border-radius:8px}
   table{border-collapse:collapse;width:100%;font-size:.9rem}
@@ -37,10 +37,10 @@ function page(title: string, body: string): string {
   form.inline{display:inline}
   button,input{font-family:inherit;font-size:.85rem}
   input[type=text]{padding:.35rem .5rem;border:1px solid #b9c4c6;border-radius:5px;min-width:0}
-  button{padding:.35rem .7rem;border:1px solid #0e7c86;background:#0e7c86;color:#fff;border-radius:5px;cursor:pointer;line-height:1.3}
+  button{padding:.35rem .7rem;border:1px solid #5b44d9;background:#5b44d9;color:#fff;border-radius:5px;cursor:pointer;line-height:1.3}
   button:hover{filter:brightness(1.1)}
   button.danger{background:#a33;border-color:#a33}
-  :focus-visible{outline:2px solid #0e7c86;outline-offset:2px}
+  :focus-visible{outline:2px solid #8870fc;outline-offset:2px}
   .fields{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center}
   .fields input[type=text]{flex:1 1 16rem}
   /* Each ACL entry keeps its remove button glued to its user ID. */
@@ -50,7 +50,7 @@ function page(title: string, body: string): string {
   .pill{display:inline-block;padding:.1rem .5rem;border-radius:99px;font-size:.75rem;font-weight:600;white-space:nowrap}
   .on{background:#dcf2e6;color:#146c43}.off{background:#e8ebec;color:#5b6a70}.rev{background:#f7dede;color:#8a2020}.paused{background:#fdf0d5;color:#8a6100}
   .msg{background:#fff;border:1px solid #dde4e5;border-radius:8px;padding:.75rem 1rem;margin:.5rem 0}
-  .msg.user{border-left:3px solid #0e7c86}.msg.assistant{border-left:3px solid #999}.msg.system{border-left:3px solid #a33}
+  .msg.user{border-left:3px solid #8870fc}.msg.assistant{border-left:3px solid #999}.msg.system{border-left:3px solid #a33}
   /* pre-wrap lives on the body only, so template indentation never leaks in. */
   .msg .body{white-space:pre-wrap;overflow-wrap:anywhere}
   .meta{font-size:.75rem;color:#5b6a70;margin-bottom:.25rem}
@@ -104,7 +104,7 @@ export function renderHome(): string {
     .join("");
 
   return page(
-    "Workspace Agent — Hosts",
+    "Understudy — Hosts",
     `<h1>Hosts</h1>
     <div class="table-wrap"><table>
       <thead><tr><th>Host</th><th>Status</th><th>Usage</th><th>Who may ask (Slack user IDs)</th><th></th></tr></thead>
@@ -121,7 +121,7 @@ export function renderHome(): string {
 }
 
 export function renderToken(hostName: string, token: string, publicUrl: string): string {
-  const appLink = `workspace-agent://enroll?broker=${encodeURIComponent(publicUrl)}&token=${encodeURIComponent(token)}`;
+  const appLink = `understudy://enroll?broker=${encodeURIComponent(publicUrl)}&token=${encodeURIComponent(token)}`;
   const dmgs = listDownloads();
   const downloadLine = dmgs.length
     ? dmgs.map((f) => `<a href="/downloads/${encodeURIComponent(f)}">${esc(f)}</a>`).join(" · ")

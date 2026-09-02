@@ -1,5 +1,5 @@
 import type { WebClient } from "@slack/web-api";
-import { redactSecrets, type PeerInfo } from "@workspace-agent/shared";
+import { redactSecrets, type PeerInfo } from "@understudy/shared";
 import { config } from "./config";
 import {
   addTranscript,

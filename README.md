@@ -1,10 +1,17 @@
-# Workspace Agent
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/logo-dark.svg">
+    <img src="assets/logo.svg" alt="Understudy" width="340">
+  </picture>
+</p>
 
-Ask a coworker's Claude a question from Slack. Each participating coworker runs a small
-daemon on their dev machine; questions from Slack spin up a **read-only Claude Code
-session** (Claude Agent SDK) scoped to directories they chose to expose, and the answer
-streams back into the Slack thread. Access is invitation-only, revocable in one click,
-and every conversation is audited.
+# Understudy
+
+Ask a coworker's Claude a question from Slack. An understudy stands in when the lead is
+busy: each participating coworker runs a small daemon on their dev machine; questions
+from Slack spin up a **read-only Claude Code session** (Claude Agent SDK) scoped to
+directories they chose to expose, and the answer streams back into the Slack thread.
+Access is invitation-only, revocable in one click, and every conversation is audited.
 
 ```
 Slack ──Socket Mode──► Broker ◄──WSS (daemon dials out)── Daemon ──spawns──► read-only Claude Code
@@ -21,7 +28,7 @@ brokered query, checked against the original asker's access.
 | Package | Runs on | What it does |
 |---|---|---|
 | `packages/broker` | a small server (Fly.io, VPS, or your machine to start) | Slack app (Socket Mode), WebSocket hub for daemons, enrollment + revocation, ACLs, rate limits/budgets, audit log, admin dashboard at `/admin` |
-| `packages/app` | each coworker's Mac (recommended) | Menu-bar app wrapping the daemon: one-click `workspace-agent://` enrollment links, native folder picker, pause/resume, model picker, recent questions, start-at-login, unenroll — no terminal needed. Ships the Claude Code runtime; the owner just needs to be signed in. |
+| `packages/app` | each coworker's Mac (recommended) | Menu-bar app wrapping the daemon: one-click `understudy://` enrollment links, native folder picker, pause/resume, model picker, recent questions, start-at-login, unenroll — no terminal needed. Ships the Claude Code runtime; the owner just needs to be signed in. |
 | `packages/daemon` | each coworker's machine (CLI alternative) | Outbound WSS connection, spawns read-only Agent SDK sessions, path containment, secret redaction, local audit log, desktop notifications, pause/unenroll kill switch, one `ask_agent` tool for consulting other coworkers' agents |
 | `packages/shared` | both | Wire protocol (zod), path containment rules, secret redaction |
 
@@ -51,8 +58,8 @@ the systemd recipe and the pull-and-restart update procedure.
 ### 3. Build the Mac app (once)
 
 ```sh
-pnpm app dist:unsigned                             # → packages/app/release/Workspace-Agent-<v>-arm64.dmg
-cp packages/app/release/Workspace-Agent-*.dmg packages/broker/downloads/
+pnpm app dist:unsigned                             # → packages/app/release/Understudy-<v>-arm64.dmg
+cp packages/app/release/Understudy-*.dmg packages/broker/downloads/
 ```
 
 The broker now serves the installer at `/downloads/…` and links it from every token page.
@@ -66,7 +73,7 @@ version bump — see [docs/RELEASING.md](docs/RELEASING.md).
 ### 4. Enroll a coworker (no terminal involved)
 
 1. Dashboard → **Enroll a new coworker** → host name (`jane`) + their Slack user ID.
-2. The token page gives you a download link and a one-click `workspace-agent://enroll?…`
+2. The token page gives you a download link and a one-click `understudy://enroll?…`
    link — send both to them privately.
 3. They install the app, click the link, pick which folders to share in a native
    dialog, and hit **Enroll This Mac**. The app lives in the menu bar, starts at
@@ -82,8 +89,8 @@ CLI alternative (any platform): `pnpm daemon enroll --broker <url> --token <T> -
 
 ### 5. Ask things
 
-- **Channel:** `/ask jane where does token refresh happen?` — the bot posts the question, answers in the thread, and thread replies continue the same session. (`/invite @Workspace Agent` to the channel first.)
-- **Mention:** `@Workspace Agent jane: what runs on deploy?`
+- **Channel:** `/ask jane where does token refresh happen?` — the bot posts the question, answers in the thread, and thread replies continue the same session. (`/invite @Understudy` to the channel first.)
+- **Mention:** `@Understudy jane: what runs on deploy?`
 - **DM the bot:** `jane: where is the retry logic?` — after that, just keep typing; the DM stays pointed at jane until you name another host or say `reset`. `hosts` lists agents you can reach and the folders each one shares, `help` explains all of this.
 
 If a host is offline, asleep, or paused, the bot says so immediately.
@@ -129,7 +136,7 @@ suggest `/ask <name>` instead.
 
 Everything is in the menu-bar app. The tray menu has pause/resume, shared folders,
 **Answer Model**, recent questions, start at login, and **Unenroll This Mac**.
-**Open Workspace Agent…** opens the owner panel:
+**Open Understudy…** opens the owner panel:
 
 - **People** — who may ask your agent: search coworkers by name, add/remove.
   Same power from your DM with the bot: `allow @name`, `deny @name`, `team`.
@@ -161,7 +168,7 @@ pnpm daemon unenroll   # revoke this machine and delete local credentials
 ```
 
 Every query fires a macOS notification, and a local JSONL mirror of all activity is
-kept in `~/.workspace-agent/logs/` — the owner never has to trust the broker's log alone.
+kept in `~/.understudy/logs/` — the owner never has to trust the broker's log alone.
 
 ## Security model
 

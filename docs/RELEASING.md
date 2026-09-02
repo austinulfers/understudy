@@ -184,6 +184,16 @@ What this relies on, all of it easy to break by accident:
 - **Signed by the same Developer ID.** Squirrel.Mac validates the downloaded
   app's signature against the running one before swapping bundles. Unsigned
   builds cannot update, which is why this arrived after 0.1.2.
+- **The bundle identifier.** That check is against the running app's
+  designated requirement, which names its bundle identifier (`build.appId`).
+  It changed from `ai.trainloop.workspace-agent` to `ai.trainloop.understudy`
+  in the rename to Understudy — deliberately, since Austin was the only person
+  with it installed and reinstalling once was cheaper than carrying the old
+  identifier forever. That means the first Understudy release cannot
+  self-update a copy installed under the old identifier; install it by hand
+  from the DMG, same as any pre-0.1.5 copy. Every release after that
+  self-updates normally. Don't repeat this once other people are enrolled —
+  changing `appId` again would strand every install that exists by then.
 - **A `zip` target.** Squirrel.Mac installs from a zip of the `.app`; it cannot
   use a DMG. `build.mac.target` lists both. The DMG is for humans.
 - **`latest-mac.yml` on the release.** electron-builder writes it because the
@@ -191,8 +201,9 @@ What this relies on, all of it easy to break by accident:
   reads from — uploading is this workflow's own `gh release create`, so every
   electron-builder invocation passes `--publish never`.
 - **Artifact names without spaces.** GitHub rewrites spaces to dots in uploaded
-  asset names, and the updater requests whatever the manifest says, so
-  `Workspace Agent-…` would 404. `build.artifactName` fixes the names.
+  asset names, and the updater requests whatever the manifest says, so a product
+  name with a space in it (as `Workspace Agent` had) would 404.
+  `build.artifactName` pins the names.
 - **A manifest that matches the files.** electron-builder hashes each artifact
   as it is built; signing, notarizing, and stapling the DMG afterwards changes
   its bytes. [`update-manifest.mjs`](../packages/app/scripts/update-manifest.mjs)
@@ -204,7 +215,10 @@ updates stop until the manifest and zip are served from somewhere else (the
 broker would do).
 
 Copies installed before 0.1.5 predate the updater and need one last manual
-install. A copy running from outside Applications — typically straight off the
+install. Squirrel.Mac swaps the bundle in place, so a copy installed as
+`Workspace Agent.app` keeps that file name in Applications after updating to
+Understudy, while everything inside it and on screen says Understudy;
+reinstalling from the DMG, or renaming it in Finder, fixes the file name. A copy running from outside Applications — typically straight off the
 disk image — is offered a move there at launch, since the swap cannot happen on
 a read-only volume.
 
@@ -254,7 +268,7 @@ the Electron process does.
 ## Building locally
 
 ```sh
-pnpm --filter workspace-agent-app dist:unsigned
+pnpm --filter understudy-app dist:unsigned
 ```
 
 Skips signing and notarization. The result runs on your own machine but will be

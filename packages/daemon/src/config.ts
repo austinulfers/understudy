@@ -1,7 +1,7 @@
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
-import { expandHome } from "@workspace-agent/shared";
+import { expandHome } from "@understudy/shared";
 
 export interface DaemonConfig {
   brokerUrl: string;
@@ -36,9 +36,27 @@ export function modelLabel(model: string | undefined): string {
   return choice ? choice.label : model!;
 }
 
-export const CONFIG_DIR = path.join(os.homedir(), ".workspace-agent");
+export const CONFIG_DIR = path.join(os.homedir(), ".understudy");
 const CONFIG_PATH = path.join(CONFIG_DIR, "config.json");
 export const LOG_DIR = path.join(CONFIG_DIR, "logs");
+
+/** Where every install kept its credentials, roots, and logs before the app was renamed Understudy. */
+const LEGACY_CONFIG_DIR = path.join(os.homedir(), ".workspace-agent");
+
+/**
+ * Carry a pre-rename install over so nobody has to enroll again. Runs when this
+ * module loads, ahead of anything that reads or writes the directory, and only
+ * ever once: after the move there is nothing left at the old path.
+ */
+function adoptLegacyConfigDir(): void {
+  if (fs.existsSync(CONFIG_DIR) || !fs.existsSync(LEGACY_CONFIG_DIR)) return;
+  try {
+    fs.renameSync(LEGACY_CONFIG_DIR, CONFIG_DIR);
+  } catch (err) {
+    console.error(`[config] could not move ${LEGACY_CONFIG_DIR} to ${CONFIG_DIR}:`, err);
+  }
+}
+adoptLegacyConfigDir();
 
 export function loadConfig(): DaemonConfig | null {
   try {

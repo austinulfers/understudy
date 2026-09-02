@@ -1,5 +1,5 @@
 {
-  "name": "workspace-agent",
+  "name": "understudy",
   "private": true,
   "version": "0.1.0",
   "packageManager": "pnpm@9.15.9",
@@ -7,9 +7,13 @@
     "node": ">=20"
   },
   "scripts": {
-    "broker": "pnpm --filter @workspace-agent/broker start",
-    "daemon": "pnpm --filter @workspace-agent/daemon cli",
-    "app": "pnpm --filter workspace-agent-app",
-    "typecheck": "pnpm -r typecheck"
+    "broker": "pnpm --filter @understudy/broker start",
+    "daemon": "pnpm --filter @understudy/daemon cli",
+    "app": "pnpm --filter understudy-app",
+    "typecheck": "pnpm -r typecheck",
+    "icons": "node assets/build-icons.mjs"
+  },
+  "devDependencies": {
+    "@resvg/resvg-js": "^2.6.2"
   }
 }

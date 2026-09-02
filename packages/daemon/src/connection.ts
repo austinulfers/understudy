@@ -1,6 +1,6 @@
 import * as path from "node:path";
 import WebSocket from "ws";
-import { BrokerToDaemonSchema, parseFrame, type DaemonToBroker } from "@workspace-agent/shared";
+import { BrokerToDaemonSchema, parseFrame, type DaemonToBroker } from "@understudy/shared";
 import { loadConfig, type DaemonConfig } from "./config";
 import { daemonEvents } from "./events";
 import { cancelQuery, handleQuery, resolvePeerResult } from "./sessions";

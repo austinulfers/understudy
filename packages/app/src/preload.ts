@@ -1,6 +1,6 @@
 import { contextBridge, ipcRenderer } from "electron";
 
-contextBridge.exposeInMainWorld("wa", {
+contextBridge.exposeInMainWorld("understudy", {
   // onboarding
   prefill: () => ipcRenderer.invoke("prefill"),
   pickFolders: () => ipcRenderer.invoke("pick-folders"),
