@@ -45,7 +45,8 @@ pnpm broker
 The dashboard is at `http://localhost:8787/admin` (user `admin`, password = `ADMIN_TOKEN`).
 For real use, put the broker somewhere daemons can reach over HTTPS/WSS (Fly.io,
 Railway, a VPS behind Caddy). Only the daemons and the dashboard need to reach it —
-Slack does not (Socket Mode dials out).
+Slack does not (Socket Mode dials out). [docs/DEPLOYING.md](docs/DEPLOYING.md) has
+the systemd recipe and the pull-and-restart update procedure.
 
 ### 3. Build the Mac app (once)
 

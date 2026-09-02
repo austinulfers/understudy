@@ -2,6 +2,8 @@ node_modules/
 dist/
 packages/app/release/
 packages/broker/downloads/
+# The broker's SQLite database when deployed from a checkout (see docs/DEPLOYING.md).
+data/
 .env
 *.db
 *.db-journal
