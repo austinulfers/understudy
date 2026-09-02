@@ -88,6 +88,8 @@
   }
   .save:disabled { opacity: .6; }
   .empty { color: var(--muted); font-style: italic; padding: 14px 0; }
+  h2.section { font-size: 13px; font-weight: 650; margin: 18px 0 4px; }
+  h2.section:first-child { margin-top: 0; }
 </style>
 </head>
 <body>
@@ -99,7 +101,7 @@
 <nav>
   <button data-tab="people" class="active">People</button>
   <button data-tab="convos">Conversations</button>
-  <button data-tab="settings">Budget</button>
+  <button data-tab="settings">Settings</button>
 </nav>
 <main>
   <div class="tab active" id="tab-people">
@@ -122,12 +124,16 @@
   </div>
 
   <div class="tab" id="tab-settings">
+    <h2 class="section">Daily budget</h2>
     <p class="hint">Questions run on <b>your</b> Claude account. This cap is yours to set — once it's hit, the bot tells askers to try again tomorrow.</p>
     <div class="field" id="limit-field">
       <label><input type="radio" name="limit" value="default"> Team default (<span id="default-limit"></span> questions/day)</label>
       <label><input type="radio" name="limit" value="custom"> Custom: <input type="number" id="custom-limit" min="0" max="10000"> questions/day</label>
     </div>
     <button class="save" id="save-limit">Save</button>
+    <h2 class="section">Other agents</h2>
+    <p class="hint">When a coworker asks their own agent something that lives in your code, their agent can put a question to yours. That only works for coworkers who could ask you directly, it counts against your daily cap, and every exchange shows up under Conversations.</p>
+    <div class="field"><label><input type="checkbox" id="accept-peers"> Let other agents ask my agent questions</label></div>
     <div class="error" id="settings-error"></div>
   </div>
 </main>
@@ -289,7 +295,14 @@
     document.querySelector('input[name=limit][value=default]').checked = !custom;
     document.querySelector('input[name=limit][value=custom]').checked = custom;
     $("custom-limit").value = custom ? overview.dailyLimit : overview.defaultDailyLimit;
+    $("accept-peers").checked = overview.acceptPeerAsks !== false;
   }
+
+  $("accept-peers").onchange = async () => {
+    const res = await window.wa.panelPeers($("accept-peers").checked);
+    $("settings-error").textContent = res.ok ? "" : res.error;
+    refresh();
+  };
 
   $("save-limit").onclick = async () => {
     const custom = document.querySelector('input[name=limit][value=custom]').checked;

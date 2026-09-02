@@ -9,9 +9,12 @@ and every conversation is audited.
 ```
 Slack ──Socket Mode──► Broker ◄──WSS (daemon dials out)── Daemon ──spawns──► read-only Claude Code
                         │ ACLs · audit log · dashboard          │ path allowlist · secret deny-list
+                        │ routes agent-to-agent questions       │ can ask other daemons' agents (via broker)
 ```
 
-Everything connects **outbound**: nobody opens a port on their laptop.
+Everything connects **outbound**: nobody opens a port on their laptop. Agents never talk
+to each other directly either: a question from one agent to another is just another
+brokered query, checked against the original asker's access.
 
 ## Components
 
@@ -19,7 +22,7 @@ Everything connects **outbound**: nobody opens a port on their laptop.
 |---|---|---|
 | `packages/broker` | a small server (Fly.io, VPS, or your machine to start) | Slack app (Socket Mode), WebSocket hub for daemons, enrollment + revocation, ACLs, rate limits/budgets, audit log, admin dashboard at `/admin` |
 | `packages/app` | each coworker's Mac (recommended) | Menu-bar app wrapping the daemon: one-click `workspace-agent://` enrollment links, native folder picker, pause/resume, model picker, recent questions, start-at-login, unenroll — no terminal needed. Ships the Claude Code runtime; the owner just needs to be signed in. |
-| `packages/daemon` | each coworker's machine (CLI alternative) | Outbound WSS connection, spawns read-only Agent SDK sessions, path containment, secret redaction, local audit log, desktop notifications, pause/unenroll kill switch |
+| `packages/daemon` | each coworker's machine (CLI alternative) | Outbound WSS connection, spawns read-only Agent SDK sessions, path containment, secret redaction, local audit log, desktop notifications, pause/unenroll kill switch, one `ask_agent` tool for consulting other coworkers' agents |
 | `packages/shared` | both | Wire protocol (zod), path containment rules, secret redaction |
 
 ## Setup
@@ -79,9 +82,46 @@ CLI alternative (any platform): `pnpm daemon enroll --broker <url> --token <T> -
 
 - **Channel:** `/ask jane where does token refresh happen?` — the bot posts the question, answers in the thread, and thread replies continue the same session. (`/invite @Workspace Agent` to the channel first.)
 - **Mention:** `@Workspace Agent jane: what runs on deploy?`
-- **DM the bot:** `jane: where is the retry logic?` — after that, just keep typing; the DM stays pointed at jane until you name another host or say `reset`. `hosts` lists agents you can reach, `help` explains all of this.
+- **DM the bot:** `jane: where is the retry logic?` — after that, just keep typing; the DM stays pointed at jane until you name another host or say `reset`. `hosts` lists agents you can reach and the folders each one shares, `help` explains all of this.
 
 If a host is offline, asleep, or paused, the bot says so immediately.
+
+### 6. Agents consult each other
+
+The agent you ask knows which *other* agents you can reach and which folders each one
+shares (the same list `hosts` shows you). When the answer probably lives on a coworker's
+machine — the other side of an API this code calls, a service this repo depends on,
+something it searched for here and couldn't find — it can ask that agent a specific
+question, fold the answer into its own, and say so:
+
+> … the token is minted in `auth/session.ts:41` and checked on bob's side in
+> `middleware/verify.ts`, per bob's agent.
+>
+> _🤝 Consulted bob's agent._
+
+- **Your access, not the host's.** A consultation is checked against *your* ACLs, the
+  consulted host's budget, and its presence — exactly as if you had `/ask`ed it yourself.
+  An agent can only reach agents you could ask directly, so a hop never exposes code you
+  weren't granted.
+- **One hop, a few questions.** A consulted agent can't consult onward. One answer may ask
+  at most `PEER_ASKS_PER_QUERY` questions (default 3), each capped at
+  `PEER_QUERY_TIMEOUT_MS` (default 3 minutes); ending or cancelling the question ends
+  its consultations too.
+- **Costs land where the work runs.** Each consultation counts against the consulted
+  host's daily budget, since it runs on their Claude account. It doesn't count against
+  your per-minute rate limit; the per-question cap bounds it instead.
+- **Nothing is hidden.** The consulted owner gets the usual notification (“austin's agent
+  is asking your agent a question for Jane”), the exchange shows up in both owners'
+  **Conversations** and in the local activity log, and the Slack answer names every agent
+  it consulted.
+- **Owners can opt out.** The app's **Settings** tab has *Let other agents ask my agent
+  questions*, on by default. Switched off, other agents still know your agent exists and
+  will tell the asker to `/ask` you directly.
+
+Follow-ups reuse the consultation: if the agent asks bob's agent again in the same thread,
+bob's session resumes, so it remembers what it already said. Set `PEER_ASKS_PER_QUERY=0`
+on the broker to turn consultations off; agents still know who else exists and will
+suggest `/ask <name>` instead.
 
 ## Host-owner controls
 
@@ -95,8 +135,9 @@ Everything is in the menu-bar app. The tray menu has pause/resume, shared folder
   re-install the Slack app after updating the manifest).
 - **Conversations** — every conversation that ran on your machine, with full
   transcripts.
-- **Budget** — questions run on *your* Claude account, so the daily cap is yours:
-  team default or a custom number, plus today's usage.
+- **Settings** — questions run on *your* Claude account, so the daily cap is yours:
+  team default or a custom number, plus today's usage. Also whether coworkers' agents
+  may put questions to yours (on by default; see below).
 
 **Answer Model** picks which Claude model answers coworkers' questions — Claude
 Code's default, Opus 5, Sonnet 5, or Haiku 4.5. Since the questions bill to your
@@ -122,11 +163,14 @@ kept in `~/.workspace-agent/logs/` — the owner never has to trust the broker's
 
 ## Security model
 
-- **Read-only, twice over.** Sessions run with only `Read`/`Grep`/`Glob` allowed, and a
-  `canUseTool` hook independently re-checks every call: paths must resolve inside an
-  exposed root and must not match the secret deny-list (`.env*`, key files, `.ssh/`,
-  `.aws/`, `.claude/`, …). No Bash, no writes, no web access, and guest sessions never
-  load the owner's `CLAUDE.md`/settings.
+- **Read-only, twice over.** Sessions get only `Read`/`Grep`/`Glob`, and a `PreToolUse`
+  hook independently vets every call (including reads inside the working directory,
+  which Claude Code would otherwise approve on its own): paths are resolved, symlinks
+  followed, and must land inside an exposed root without matching the secret deny-list
+  (`.env*`, key files, `.ssh/`, `.aws/`, `.claude/`, …). Search tools scan whole
+  directories, so a `PostToolUse` hook strips any result line that came from a protected
+  file before the model sees it. No Bash, no writes, no web access, no MCP servers from
+  the owner's own setup, and guest sessions never load the owner's `CLAUDE.md`/settings.
 - **Redaction on both ends.** Credential-shaped strings (PEM blocks, `sk-…`, `AKIA…`,
   `xoxb-…`, JWTs, `password=…`) are scrubbed on the daemon before the answer leaves the
   machine, and again on the broker before posting to Slack.
@@ -136,6 +180,10 @@ kept in `~/.workspace-agent/logs/` — the owner never has to trust the broker's
   Revoking a host severs its socket immediately and refuses reconnects.
 - **Budgets.** Per-asker rate limit (6/min) and per-host daily query cap (50 by default) —
   queries run on the host's Claude plan.
+- **Agent hops inherit the asker's access.** When one agent consults another, the broker
+  applies the *asker's* ACL and the consulted host's budget, never the asking host owner's
+  access. Hops go one level deep, a few per question, and the consulted agent is told
+  who is asking and on whose behalf.
 - **Honest boundary:** read-only is not "safe" — anyone with query access can read any
   exposed source through the agent. Grant access like you'd grant repo access.
 

@@ -6,6 +6,8 @@ export interface QueryEvent {
   state: "start" | "done" | "error";
   queryId: string;
   askerName: string;
+  /** Set when another host's agent asked on the asker's behalf. */
+  viaHost?: string;
   question: string;
   at: number;
   costUsd?: number;

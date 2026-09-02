@@ -78,7 +78,9 @@ function hostLine(host: HostRow): string {
       ? "⏸ paused"
       : "🟢 online"
     : `⚫ offline (${formatLastSeen(host.last_seen)})`;
-  return `• *${host.name}* — ${status}`;
+  const folders = hub.foldersOf(host.id);
+  const covers = folders.length ? ` — _${folders.join(", ")}_` : "";
+  return `• *${host.name}* — ${status}${covers}`;
 }
 
 function helpText(userId: string): string {
@@ -93,6 +95,7 @@ function helpText(userId: string): string {
     "*In this DM:* `jane: your question` — after that, just keep typing and I'll keep asking jane.",
     "*DM commands:* `hosts` (list agents), `reset` (forget the current agent + conversation), `help`",
     "*If you own an agent:* `allow @name` / `deny @name` control who may ask it; `team` shows who has access.",
+    "*Agents consult each other:* if the agent you ask thinks a coworker's agent knows better, it asks them for you — only agents you can already ask — and the answer says who it consulted.",
     "",
     "*Agents you can ask:*",
     list,

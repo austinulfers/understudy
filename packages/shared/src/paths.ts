@@ -63,8 +63,13 @@ export interface PathVerdict {
   reason?: string;
 }
 
-export function checkPath(rawPath: string, roots: string[]): PathVerdict {
-  const resolved = path.resolve(expandHome(rawPath));
+/**
+ * @param cwd Where a relative path is taken to start: the session's own
+ *   working directory (its primary root), not this process's, which can be
+ *   anywhere and would make the check disagree with what the tool reads.
+ */
+export function checkPath(rawPath: string, roots: string[], cwd: string = process.cwd()): PathVerdict {
+  const resolved = path.resolve(cwd, expandHome(rawPath));
 
   const inRoot = roots.some((root) => {
     const r = path.resolve(expandHome(root));
@@ -102,10 +107,14 @@ export function extractToolPaths(toolName: string, input: Record<string, unknown
     const value = input[key];
     if (typeof value === "string" && value.length > 0) paths.push(value);
   }
-  // An absolute glob/grep pattern is itself a path escape attempt.
+  // A glob/grep pattern that is absolute, or climbs out of the working
+  // directory, is itself a path escape attempt: vet its literal prefix.
   const pattern = input["pattern"];
-  if (typeof pattern === "string" && (pattern.startsWith("/") || pattern.startsWith("~"))) {
-    paths.push(pattern.replace(/[*?[{].*$/, "") || "/");
+  if (typeof pattern === "string") {
+    const climbs = pattern.split(/[\\/]/).includes("..");
+    if (pattern.startsWith("/") || pattern.startsWith("~") || climbs) {
+      paths.push(pattern.replace(/[*?[{].*$/, "") || "/");
+    }
   }
   return paths;
 }

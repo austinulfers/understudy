@@ -14,6 +14,7 @@ import {
   redeemEnrollToken,
   removeAcl,
   revokeHost,
+  setAcceptPeerAsks,
   setDailyLimit,
   usageToday,
   verifyDevice,
@@ -107,6 +108,7 @@ export function buildHttpApp(): express.Express {
       dailyLimit: host.daily_limit,
       defaultDailyLimit: config.defaultDailyLimit,
       usageToday: usageToday(host.id),
+      acceptPeerAsks: host.accept_peer_asks === 1,
       acl,
       conversations,
     });
@@ -138,6 +140,17 @@ export function buildHttpApp(): express.Express {
       return;
     }
     setDailyLimit(host.id, limit);
+    res.json({ ok: true });
+  });
+
+  app.post("/api/host/peers", deviceAuth, (req, res) => {
+    const host = res.locals.host as HostRow;
+    const accept = req.body?.acceptPeerAsks;
+    if (typeof accept !== "boolean") {
+      res.status(400).json({ error: "expected { acceptPeerAsks: true|false }" });
+      return;
+    }
+    setAcceptPeerAsks(host.id, accept);
     res.json({ ok: true });
   });
 

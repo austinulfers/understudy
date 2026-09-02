@@ -16,7 +16,8 @@ CREATE TABLE IF NOT EXISTS hosts (
   daily_limit INTEGER,
   last_seen INTEGER,
   created_at INTEGER NOT NULL,
-  revoked_at INTEGER
+  revoked_at INTEGER,
+  accept_peer_asks INTEGER NOT NULL DEFAULT 1
 );
 CREATE TABLE IF NOT EXISTS enroll_tokens (
   id TEXT PRIMARY KEY,
@@ -100,6 +101,14 @@ CREATE TABLE IF NOT EXISTS usage (
 
 db.exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_hosts_active_name ON hosts(name) WHERE status = 'active';`);
 
+// Migration: hosts gained an opt-out from questions asked by other agents.
+{
+  const hostCols = (db.pragma("table_info(hosts)") as { name: string }[]).map((c) => c.name);
+  if (!hostCols.includes("accept_peer_asks")) {
+    db.exec(`ALTER TABLE hosts ADD COLUMN accept_peer_asks INTEGER NOT NULL DEFAULT 1;`);
+  }
+}
+
 // Migration: acls gained provenance columns when self-service grants shipped.
 {
   const aclCols = (db.pragma("table_info(acls)") as { name: string }[]).map((c) => c.name);
@@ -122,6 +131,8 @@ export interface HostRow {
   last_seen: number | null;
   created_at: number;
   revoked_at: number | null;
+  /** 1 when other agents may consult this host on an asker's behalf. */
+  accept_peer_asks: number;
 }
 
 export interface ThreadRow {
@@ -260,6 +271,10 @@ export function hostsOwnedBy(slackUserId: string): HostRow[] {
 
 export function setDailyLimit(hostId: string, limit: number | null): void {
   db.prepare(`UPDATE hosts SET daily_limit = ? WHERE id = ?`).run(limit, hostId);
+}
+
+export function setAcceptPeerAsks(hostId: string, accept: boolean): void {
+  db.prepare(`UPDATE hosts SET accept_peer_asks = ? WHERE id = ?`).run(accept ? 1 : 0, hostId);
 }
 
 /** Hosts a given Slack user is allowed to query. */

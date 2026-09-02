@@ -1,8 +1,9 @@
+import * as path from "node:path";
 import WebSocket from "ws";
 import { BrokerToDaemonSchema, parseFrame, type DaemonToBroker } from "@workspace-agent/shared";
 import { loadConfig, type DaemonConfig } from "./config";
 import { daemonEvents } from "./events";
-import { cancelQuery, handleQuery } from "./sessions";
+import { cancelQuery, handleQuery, resolvePeerResult } from "./sessions";
 
 export interface DaemonControl {
   stop(): void;
@@ -34,6 +35,16 @@ export function runDaemon(initial: DaemonConfig, hooks: DaemonHooks = {}): Daemo
     if (ws?.readyState === WebSocket.OPEN) ws.send(JSON.stringify(msg));
   };
 
+  /**
+   * What the broker, and through it askers and other agents, know about this
+   * host: whether it answers, and the names (not paths) of what it shares.
+   */
+  const presence = (): DaemonToBroker => ({
+    type: "presence",
+    paused: config.paused,
+    folders: config.roots.map((root) => path.basename(root)),
+  });
+
   const connect = (): void => {
     if (stopped) return;
     daemonEvents.emit("state", "connecting");
@@ -47,7 +58,7 @@ export function runDaemon(initial: DaemonConfig, hooks: DaemonHooks = {}): Daemo
       connected = true;
       console.log(`[daemon] connected to ${url} as "${config.hostName}"`);
       daemonEvents.emit("state", "connected");
-      send({ type: "presence", paused: config.paused });
+      send(presence());
     });
 
     ws.on("message", (raw) => {
@@ -55,6 +66,10 @@ export function runDaemon(initial: DaemonConfig, hooks: DaemonHooks = {}): Daemo
       if (!msg) return;
       if (msg.type === "cancel") {
         cancelQuery(msg.queryId);
+        return;
+      }
+      if (msg.type === "peer_result") {
+        resolvePeerResult(msg);
         return;
       }
       if (config.paused) {
@@ -90,16 +105,15 @@ export function runDaemon(initial: DaemonConfig, hooks: DaemonHooks = {}): Daemo
 
   connect();
 
-  // Pick up `pause` / `resume` / root edits made by the CLI while running.
+  // Pick up `pause` / `resume` / root edits made by the CLI or the app while running.
   const poll = setInterval(() => {
     const fresh = loadConfig();
     if (!fresh) return;
     const pausedChanged = fresh.paused !== config.paused;
+    const rootsChanged = fresh.roots.join("\0") !== config.roots.join("\0");
     config = fresh;
-    if (pausedChanged) {
-      console.log(`[daemon] ${config.paused ? "paused" : "resumed"} by owner`);
-      send({ type: "presence", paused: config.paused });
-    }
+    if (pausedChanged) console.log(`[daemon] ${config.paused ? "paused" : "resumed"} by owner`);
+    if (pausedChanged || rootsChanged) send(presence());
   }, 5000);
   poll.unref();
 
@@ -113,7 +127,7 @@ export function runDaemon(initial: DaemonConfig, hooks: DaemonHooks = {}): Daemo
     },
     setPaused(paused) {
       config = { ...config, paused };
-      send({ type: "presence", paused });
+      send(presence());
     },
     setModel(model) {
       // In-flight queries keep the model they started with.

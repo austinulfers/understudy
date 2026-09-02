@@ -1,7 +1,7 @@
 {
   "name": "workspace-agent-app",
   "productName": "Workspace Agent",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "private": true,
   "type": "module",
   "main": "dist/main.js",

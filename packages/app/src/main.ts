@@ -184,7 +184,7 @@ function rebuildMenu(): void {
       label: "Recent Questions",
       submenu: recent.length
         ? recent.map<Electron.MenuItemConstructorOptions>((event) => ({
-            label: `${new Date(event.at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })} · ${event.askerName}: ${truncate(event.question, 42)}`,
+            label: `${new Date(event.at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })} · ${event.askerName}${event.viaHost ? ` via ${event.viaHost}'s agent` : ""}: ${truncate(event.question, 42)}`,
             enabled: false,
           }))
         : [{ label: "None yet", enabled: false }],
@@ -348,6 +348,9 @@ ipcMain.handle("panel-acl", (_event, payload: { action: string; slackUserId: str
 );
 ipcMain.handle("panel-limit", (_event, dailyLimit: number | null) =>
   panelHandler(() => brokerFetch("/api/host/limit", { method: "POST", body: { dailyLimit } }))(),
+);
+ipcMain.handle("panel-peers", (_event, acceptPeerAsks: boolean) =>
+  panelHandler(() => brokerFetch("/api/host/peers", { method: "POST", body: { acceptPeerAsks: acceptPeerAsks === true } }))(),
 );
 ipcMain.handle("panel-transcript", (_event, threadKey: string) =>
   panelHandler(() => brokerFetch(`/api/host/transcript?key=${encodeURIComponent(String(threadKey))}`))(),

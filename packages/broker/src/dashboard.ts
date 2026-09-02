@@ -90,8 +90,11 @@ export function renderHome(): string {
         h.status === "active"
           ? `<form class="acl-add" method="post" action="/admin/hosts/${h.id}/acl"><input type="text" name="slack_user_id" placeholder="U012ABCDEF" size="12"><button>Allow</button></form>`
           : "";
+      const folders = hub.foldersOf(h.id);
+      const covers = folders.length ? `<br><span class="meta">${esc(folders.join(", "))}</span>` : "";
+      const noAgents = h.accept_peer_asks === 1 ? "" : `<br><span class="meta">not taking questions from agents</span>`;
       return `<tr>
-        <td><strong>${esc(h.name)}</strong><br><span class="meta nowrap">owner ${esc(h.owner_slack_id)}</span></td>
+        <td><strong>${esc(h.name)}</strong><br><span class="meta nowrap">owner ${esc(h.owner_slack_id)}</span>${covers}${noAgents}</td>
         <td>${statusPill(h)}</td>
         <td class="nowrap">${usageToday(h.id)} / ${h.daily_limit ?? config.defaultDailyLimit} today</td>
         <td>${acls || "<em>owner only</em>"}${aclForm}</td>

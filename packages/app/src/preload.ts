@@ -16,5 +16,6 @@ contextBridge.exposeInMainWorld("wa", {
   panelAcl: (action: "add" | "remove", slackUserId: string) =>
     ipcRenderer.invoke("panel-acl", { action, slackUserId }),
   panelLimit: (dailyLimit: number | null) => ipcRenderer.invoke("panel-limit", dailyLimit),
+  panelPeers: (acceptPeerAsks: boolean) => ipcRenderer.invoke("panel-peers", acceptPeerAsks),
   panelTranscript: (threadKey: string) => ipcRenderer.invoke("panel-transcript", threadKey),
 });
