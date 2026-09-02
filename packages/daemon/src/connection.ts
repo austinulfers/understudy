@@ -30,6 +30,13 @@ export function runDaemon(initial: DaemonConfig, hooks: DaemonHooks = {}): Daemo
   let stopped = false;
   let connected = false;
   let reconnectTimer: NodeJS.Timeout | null = null;
+  /**
+   * The broker pings every 30s. A laptop that slept, or a tunnel that was
+   * restarted, can leave this socket looking open with nobody on the other
+   * end and "close" never firing, so silence counts as disconnection.
+   */
+  const SILENCE_LIMIT_MS = 90_000;
+  let lastHeard = Date.now();
 
   const send = (msg: DaemonToBroker): void => {
     if (ws?.readyState === WebSocket.OPEN) ws.send(JSON.stringify(msg));
@@ -56,12 +63,21 @@ export function runDaemon(initial: DaemonConfig, hooks: DaemonHooks = {}): Daemo
     ws.on("open", () => {
       backoffMs = 1000;
       connected = true;
+      lastHeard = Date.now();
       console.log(`[daemon] connected to ${url} as "${config.hostName}"`);
       daemonEvents.emit("state", "connected");
       send(presence());
     });
 
+    ws.on("ping", () => {
+      lastHeard = Date.now();
+    });
+    ws.on("pong", () => {
+      lastHeard = Date.now();
+    });
+
     ws.on("message", (raw) => {
+      lastHeard = Date.now();
       const msg = parseFrame(BrokerToDaemonSchema, raw.toString());
       if (!msg) return;
       if (msg.type === "cancel") {
@@ -105,6 +121,17 @@ export function runDaemon(initial: DaemonConfig, hooks: DaemonHooks = {}): Daemo
 
   connect();
 
+  const heartbeat = setInterval(() => {
+    if (!connected || !ws) return;
+    if (Date.now() - lastHeard > SILENCE_LIMIT_MS) {
+      console.log(`[daemon] nothing from the broker for ${SILENCE_LIMIT_MS / 1000}s; reconnecting`);
+      ws.terminate(); // fires "close", which schedules the reconnect
+      return;
+    }
+    if (ws.readyState === WebSocket.OPEN) ws.ping();
+  }, 20_000);
+  heartbeat.unref();
+
   // Pick up `pause` / `resume` / root edits made by the CLI or the app while running.
   const poll = setInterval(() => {
     const fresh = loadConfig();
@@ -121,6 +148,7 @@ export function runDaemon(initial: DaemonConfig, hooks: DaemonHooks = {}): Daemo
     stop() {
       stopped = true;
       clearInterval(poll);
+      clearInterval(heartbeat);
       if (reconnectTimer) clearTimeout(reconnectTimer);
       ws?.close();
       connected = false;
