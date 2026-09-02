@@ -8,6 +8,9 @@ Pushing to `main` builds, signs, notarizes, and publishes the macOS app.
   exist, where `<version>` is read from `packages/app/package.json`. To cut a
   release, bump that version. Pushes that don't bump it still build, verify, and
   keep the DMG as a 14-day workflow artifact.
+- Installed copies **update themselves** from that release: the app checks a
+  few times a day, downloads in the background, and offers **Restart to
+  Update** in its menu. See [Self-update](#self-update) for what that relies on.
 
 ## One-time signing setup
 
@@ -139,7 +142,8 @@ there is no manual `security create-keychain` step.
 electron-builder signs the `.app`, notarizes it, staples the ticket, and *then*
 builds the DMG around it — but it leaves the DMG itself unsigned. The DMG is what
 people actually download, and Gatekeeper assesses it on mount, so the workflow
-signs, notarizes, and staples the DMG as a separate step afterwards.
+signs, notarizes, and staples the DMG as a separate step afterwards, then
+refreshes `latest-mac.yml`, whose DMG hash that step just invalidated.
 
 That means **two** round trips to Apple's notary service per release.
 
@@ -159,6 +163,53 @@ non-obvious:
   `CSSMERR_TP_NOT_TRUSTED`.
 - `security set-key-partition-list` must run after the import, or `codesign`
   blocks waiting on a keychain-access prompt that nobody is there to answer.
+
+## Self-update
+
+Installed copies keep themselves current, so nobody returns to GitHub after the
+first install. [`packages/app/src/updater.ts`](../packages/app/src/updater.ts)
+drives it through electron-updater's GitHub provider:
+
+1. Thirty seconds after launch, and every four hours after that, the app asks
+   GitHub for the newest release's tag and fetches that release's
+   `latest-mac.yml`.
+2. If the manifest names a newer version, it downloads the `.zip` in the
+   background; the tray menu shows the progress.
+3. Once downloaded, the tray offers **Restart to Update to <version>** and a
+   notification says so. Nothing installs on its own — a menu-bar app can run
+   for weeks, so "on next quit" would mean never.
+
+What this relies on, all of it easy to break by accident:
+
+- **Signed by the same Developer ID.** Squirrel.Mac validates the downloaded
+  app's signature against the running one before swapping bundles. Unsigned
+  builds cannot update, which is why this arrived after 0.1.2.
+- **A `zip` target.** Squirrel.Mac installs from a zip of the `.app`; it cannot
+  use a DMG. `build.mac.target` lists both. The DMG is for humans.
+- **`latest-mac.yml` on the release.** electron-builder writes it because the
+  build config has a `publish` block. That block only names the repo the updater
+  reads from — uploading is this workflow's own `gh release create`, so every
+  electron-builder invocation passes `--publish never`.
+- **Artifact names without spaces.** GitHub rewrites spaces to dots in uploaded
+  asset names, and the updater requests whatever the manifest says, so
+  `Workspace Agent-…` would 404. `build.artifactName` fixes the names.
+- **A manifest that matches the files.** electron-builder hashes each artifact
+  as it is built; signing, notarizing, and stapling the DMG afterwards changes
+  its bytes. [`update-manifest.mjs`](../packages/app/scripts/update-manifest.mjs)
+  recomputes every entry after the DMG step, and the verify step runs it again
+  with `--check`.
+
+The repo is public, so the updater needs no token. If it ever goes private,
+updates stop until the manifest and zip are served from somewhere else (the
+broker would do).
+
+Copies installed before 0.1.5 predate the updater and need one last manual
+install. A copy running from outside Applications — typically straight off the
+disk image — is offered a move there at launch, since the swap cannot happen on
+a read-only volume.
+
+There is no way to exercise this short of two consecutive signed releases: cut
+one, install it, cut the next, and watch the first pull it in.
 
 ## What the workflow verifies
 
@@ -180,6 +231,15 @@ For the DMG:
 - `spctl --assess --type open --context context:primary-signature` — what
   Gatekeeper asks when someone opens the downloaded disk image.
 
+For the update zip:
+
+- The `.app` inside passes the same `codesign`, `stapler`, and `spctl` checks —
+  Squirrel.Mac judges what comes out of the zip, not the zip itself.
+- `latest-mac.yml` agrees with the files being published
+  (`update-manifest.mjs --check`). electron-updater refuses a download whose
+  sha512 differs from the manifest, so a stale entry would strand every
+  installed copy on the old version.
+
 Any of these failing fails the job, so a broken build can't reach a release.
 
 ## Entitlements
@@ -198,12 +258,14 @@ pnpm --filter workspace-agent-app dist:unsigned
 ```
 
 Skips signing and notarization. The result runs on your own machine but will be
-Gatekeeper-blocked anywhere else — use CI for anything you hand to someone.
+Gatekeeper-blocked anywhere else — use CI for anything you hand to someone. It
+also writes the zip and `latest-mac.yml`; those only mean something on a release.
 
 ## Notes
 
-- **Apple Silicon only.** `build.mac.target` is `dmg`/`arm64`. Intel Macs are not
-  covered; add `x64` to that array (and expect a much slower build) if needed.
+- **Apple Silicon only.** `build.mac.target` builds `dmg` and `zip` for `arm64`.
+  Intel Macs are not covered; add `x64` to both arch arrays (and expect a much
+  slower build) if needed — the updater picks the zip for its own architecture.
 - **Notarization is slow.** Apple's notary service has to ingest the whole app,
   and this one is large — the bundled `claude` binary alone is ~317 MB. Expect
   the signing and notarization steps to dominate the run.

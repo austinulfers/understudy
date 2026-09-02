@@ -108,6 +108,9 @@ jobs:
           APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
         run: |
           pnpm --filter workspace-agent-app build
+          # `publish` in the build config names the GitHub repo the app's updater
+          # reads from and makes electron-builder write latest-mac.yml. Uploading
+          # is this workflow's own job (the last step), hence --publish never.
           pnpm --filter workspace-agent-app exec electron-builder --mac --publish never
 
       # electron-builder notarizes and staples the .app, then builds the DMG from
@@ -169,6 +172,12 @@ jobs:
 
           xcrun stapler staple "$dmg"
 
+      # electron-builder hashed the DMG before the step above rewrote it. The
+      # updater only ever fetches the zip, but the manifest is published, so it
+      # must not lie about the DMG it lists.
+      - name: Refresh the update manifest
+        run: node packages/app/scripts/update-manifest.mjs packages/app/release/latest-mac.yml
+
       - name: Clean up credentials
         if: always()
         run: |
@@ -177,12 +186,17 @@ jobs:
 
       # Catches the failure mode where the build "succeeds" but produces
       # something Gatekeeper will still reject on a user's machine.
-      - name: Verify the app and the DMG
+      - name: Verify the app, the DMG, and the update zip
         run: |
           set -euo pipefail
           shopt -s nullglob
           app="packages/app/release/mac-arm64/Workspace Agent.app"
           dmgs=(packages/app/release/*.dmg); dmg="${dmgs[0]}"
+          zips=(packages/app/release/*.zip)
+          if [ ${#zips[@]} -ne 1 ]; then
+            echo "::error::expected exactly one .zip, found ${#zips[@]}"; exit 1
+          fi
+          zip="${zips[0]}"
 
           echo "::group::app — signature, entitlements, authority"
           codesign --verify --deep --strict --verbose=2 "$app"
@@ -208,13 +222,33 @@ jobs:
           spctl --assess --type open --context context:primary-signature --verbose=4 "$dmg"
           echo "::endgroup::"
 
-          echo "App and DMG are both signed, notarized, and stapled."
+          # The zip is what installed copies download to update. Squirrel.Mac
+          # judges the app that comes out of it, so check exactly that.
+          echo "::group::zip — the app inside is signed, stapled, and Gatekeeper-clean"
+          unzipped="$RUNNER_TEMP/zip-check"
+          rm -rf "$unzipped" && mkdir -p "$unzipped"
+          ditto -x -k "$zip" "$unzipped"
+          codesign --verify --deep --strict --verbose=2 "$unzipped/Workspace Agent.app"
+          xcrun stapler validate "$unzipped/Workspace Agent.app"
+          spctl --assess --type execute --verbose=4 "$unzipped/Workspace Agent.app"
+          echo "::endgroup::"
 
-      - name: Upload DMG as a build artifact
+          # electron-updater refuses a download whose sha512 disagrees with the manifest.
+          echo "::group::manifest — latest-mac.yml matches the files being published"
+          node packages/app/scripts/update-manifest.mjs packages/app/release/latest-mac.yml --check
+          echo "::endgroup::"
+
+          echo "App, DMG, and update zip are signed, notarized, and stapled; the manifest matches."
+
+      - name: Upload the installer and update files as a build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: workspace-agent-${{ steps.meta.outputs.version }}-arm64-dmg
-          path: packages/app/release/*.dmg
+          name: workspace-agent-${{ steps.meta.outputs.version }}-arm64
+          path: |
+            packages/app/release/*.dmg
+            packages/app/release/*.zip
+            packages/app/release/*.zip.blockmap
+            packages/app/release/latest-mac.yml
           if-no-files-found: error
           retention-days: 14
 
@@ -227,11 +261,23 @@ jobs:
         run: |
           set -euo pipefail
           shopt -s nullglob
-          dmgs=(packages/app/release/*.dmg)
-          if [ ${#dmgs[@]} -eq 0 ]; then
-            echo "::error::electron-builder produced no .dmg in packages/app/release" >&2
+          # The DMG is for people. The zip, its blockmap, and latest-mac.yml are
+          # what installed copies read to update themselves. The names carry no
+          # spaces on purpose: GitHub rewrites spaces to dots on upload, while
+          # the updater requests whatever the manifest says, verbatim.
+          assets=(
+            packages/app/release/*.dmg
+            packages/app/release/*.zip
+            packages/app/release/*.zip.blockmap
+            packages/app/release/latest-mac.yml
+          )
+          if [ ${#assets[@]} -ne 4 ]; then
+            echo "::error::expected dmg, zip, zip.blockmap, and latest-mac.yml in packages/app/release; found: ${assets[*]:-nothing}" >&2
             exit 1
           fi
+          for asset in "${assets[@]}"; do
+            [ -f "$asset" ] || { echo "::error::missing release asset $asset" >&2; exit 1; }
+          done
 
           cat > "$RUNNER_TEMP/notes.md" <<'NOTES'
           ### Install
@@ -244,6 +290,11 @@ jobs:
           certificate and notarized by Apple, so they open without any Gatekeeper
           workaround. The app runs in the menu bar and has no Dock icon.
 
+          **Already installed?** Nothing to do. Workspace Agent 0.1.5 and later
+          update themselves: the app downloads new versions in the background and
+          offers **Restart to Update** from its menu bar icon. The `.zip` and
+          `latest-mac.yml` below are what it reads; you don't need them.
+
           ---
           NOTES
 
@@ -252,6 +303,6 @@ jobs:
             --target "$GITHUB_SHA" \
             --notes-file "$RUNNER_TEMP/notes.md" \
             --generate-notes \
-            "${dmgs[@]}"
+            "${assets[@]}"
 
-          echo "::notice::Published $TAG with ${#dmgs[@]} asset(s)"
+          echo "::notice::Published $TAG with ${#assets[@]} asset(s)"

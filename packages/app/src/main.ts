@@ -10,6 +10,7 @@ import {
   enrollWithBroker,
   LOG_DIR,
   loadConfig,
+  logLocal,
   MODEL_CHOICES,
   modelLabel,
   normalizeRoot,
@@ -21,6 +22,7 @@ import {
   type DaemonState,
   type QueryEvent,
 } from "@workspace-agent/daemon";
+import { installUpdate, startUpdateChecks, updateMenuItems } from "./updater";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const UI_HTML = path.join(__dirname, "..", "ui", "onboard.html");
@@ -200,8 +202,16 @@ function rebuildMenu(): void {
     items.push({ label: "Unenroll This Mac…", click: () => void unenrollFlow() });
   }
 
+  items.push({ type: "separator" }, ...updateMenuItems(restartToUpdate));
   items.push({ type: "separator" }, { label: "Quit Workspace Agent", role: "quit" });
   tray.setContextMenu(Menu.buildFromTemplate(items));
+}
+
+function restartToUpdate(): void {
+  // Same shutdown as unenroll: close the broker socket before the process goes away.
+  control?.stop();
+  control = null;
+  installUpdate();
 }
 
 async function addFolders(): Promise<void> {
@@ -409,8 +419,35 @@ app.on("window-all-closed", () => {
   // Menu-bar app: keep running with no windows.
 });
 
-void app.whenReady().then(() => {
+/**
+ * Squirrel.Mac swaps the bundle where it sits, which cannot work from the
+ * read-only disk image and is fragile anywhere but Applications. Asked on every
+ * launch outside it; launches are rare for an app that lives in the menu bar.
+ * Returns true when the app is relaunching itself from the new location.
+ */
+async function offerMoveToApplications(): Promise<boolean> {
+  if (!app.isPackaged || app.isInApplicationsFolder()) return false;
+  const choice = await dialog.showMessageBox({
+    type: "question",
+    buttons: ["Move to Applications", "Not Now"],
+    defaultId: 0,
+    cancelId: 1,
+    message: "Move Workspace Agent to the Applications folder?",
+    detail: "It is running from somewhere else. Automatic updates are only reliable from Applications; it will reopen from there.",
+  });
+  if (choice.response !== 0) return false;
+  try {
+    return app.moveToApplicationsFolder();
+  } catch (err) {
+    logLocal({ kind: "updater", level: "error", message: `move to Applications failed: ${(err as Error).message}` });
+    return false;
+  }
+}
+
+void app.whenReady().then(async () => {
   app.dock?.hide();
+  if (await offerMoveToApplications()) return;
+
   const icon = nativeImage.createFromPath(TRAY_ICON);
   icon.setTemplateImage(true);
   tray = new Tray(icon);
@@ -418,6 +455,7 @@ void app.whenReady().then(() => {
 
   config = loadConfig();
   rebuildMenu();
+  startUpdateChecks(rebuildMenu);
 
   if (config) {
     startDaemon();

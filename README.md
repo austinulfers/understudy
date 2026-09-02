@@ -51,8 +51,8 @@ the systemd recipe and the pull-and-restart update procedure.
 ### 3. Build the Mac app (once)
 
 ```sh
-pnpm app dist:unsigned                             # → packages/app/release/Workspace Agent-<v>-arm64.dmg
-cp "packages/app/release/Workspace Agent"*.dmg packages/broker/downloads/
+pnpm app dist:unsigned                             # → packages/app/release/Workspace-Agent-<v>-arm64.dmg
+cp packages/app/release/Workspace-Agent-*.dmg packages/broker/downloads/
 ```
 
 The broker now serves the installer at `/downloads/…` and links it from every token page.
@@ -70,7 +70,8 @@ version bump — see [docs/RELEASING.md](docs/RELEASING.md).
    link — send both to them privately.
 3. They install the app, click the link, pick which folders to share in a native
    dialog, and hit **Enroll This Mac**. The app lives in the menu bar, starts at
-   login, and answers begin flowing. Sessions run on **their** Claude sign-in
+   login, keeps itself updated from Releases, and answers begin flowing. Sessions
+   run on **their** Claude sign-in
    (the app detects it and points them at claude.com/claude-code if missing).
 4. Access is theirs to give: the new owner DMs the bot `allow @coworker` (or uses the
    app's **People** tab) to choose who may ask their agent. The owner is allowed
