@@ -15,7 +15,6 @@ import {
 import type { DaemonConfig } from "./config";
 import { daemonEvents, type QueryEvent } from "./events";
 import { logLocal } from "./log";
-import { notifyOwner } from "./notify";
 
 const READ_ONLY_TOOLS = ["Read", "Grep", "Glob"];
 const QUERY_TIMEOUT_MS = Number(process.env.WA_QUERY_TIMEOUT_MS ?? 5 * 60 * 1000);
@@ -161,12 +160,6 @@ async function runOne(config: DaemonConfig, msg: QueryMsg, send: Send): Promise<
     daemonEvents.emit("query", event);
   };
 
-  notifyOwner(
-    "Understudy",
-    msg.viaHost
-      ? `${msg.viaHost}'s agent is asking your agent a question for ${msg.askerName}`
-      : `${msg.askerName} is asking your agent a question`,
-  );
   logLocal({
     event: "query_start",
     queryId: msg.queryId,

@@ -8,6 +8,8 @@ import {
   saveConfig,
 } from "./config";
 import { runDaemon } from "./connection";
+import { daemonEvents, type QueryEvent } from "./events";
+import { notifyOwner, queryNotice } from "./notify";
 
 const USAGE = `understudy — read-only Claude agent for your machine, reachable from Slack
 
@@ -107,6 +109,10 @@ switch (cmd) {
   case "start": {
     const config = requireConfig();
     console.log(`[daemon] host "${config.hostName}", exposing:\n${config.roots.map((r) => `  ${r}`).join("\n")}`);
+    // No app bundle to file notifications under, so osascript has to do.
+    daemonEvents.on("query", (event: QueryEvent) => {
+      if (event.state === "start") notifyOwner("Understudy", queryNotice(event));
+    });
     runDaemon(config);
     break;
   }

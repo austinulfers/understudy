@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, ipcMain, Menu, nativeImage, shell, Tray } from "electron";
+import { app, BrowserWindow, dialog, ipcMain, Menu, nativeImage, Notification, shell, Tray } from "electron";
 import { execFileSync } from "node:child_process";
 import * as fs from "node:fs";
 import * as os from "node:os";
@@ -14,6 +14,7 @@ import {
   MODEL_CHOICES,
   modelLabel,
   normalizeRoot,
+  queryNotice,
   runDaemon,
   saveConfig,
   unenrollFromBroker,
@@ -136,9 +137,22 @@ daemonEvents.on("query", (event: QueryEvent) => {
   if (event.state === "start") {
     recent.unshift(event);
     recent.splice(8);
+    notifyQuery(event);
   }
   rebuildMenu();
 });
+
+/**
+ * Posted from the main process so macOS files it under Understudy and shows
+ * the app icon; an osascript notification would appear as Script Editor's.
+ * Clicking it opens the owner panel.
+ */
+function notifyQuery(event: QueryEvent): void {
+  if (!Notification.isSupported()) return;
+  const notification = new Notification({ title: queryNotice(event), body: truncate(event.question, 120) });
+  notification.on("click", () => showPanel());
+  notification.show();
+}
 
 // ---------- tray ----------
 

@@ -14,8 +14,9 @@ export interface QueryEvent {
 }
 
 /**
- * Process-wide event bus so an embedding UI (the menu-bar app) can observe
- * the daemon without the daemon knowing about it. The CLI ignores it.
+ * Process-wide event bus so whatever embeds the daemon (the menu-bar app, or
+ * the CLI) can observe it without the daemon knowing about them. Each posts
+ * the desktop notification for a new question from its own "query" listener.
  * Events: "state" (DaemonState), "query" (QueryEvent).
  */
 export const daemonEvents = new EventEmitter();
