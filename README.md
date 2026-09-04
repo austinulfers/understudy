@@ -146,7 +146,8 @@ Everything is in the menu-bar app. The tray menu has pause/resume, shared folder
   transcripts.
 - **Settings** — questions run on *your* Claude account, so the daily cap is yours:
   team default or a custom number, plus today's usage. Also whether coworkers' agents
-  may put questions to yours (on by default; see below).
+  may put questions to yours (on by default; see below), and the **Instructions**
+  your agent starts every answer with.
 
 **Answer Model** picks which Claude model answers coworkers' questions — Claude
 Code's default, Opus 5, Sonnet 5, or Haiku 4.5. Since the questions bill to your
@@ -156,6 +157,15 @@ codebase. It takes effect on the next question; in-flight answers finish on the
 model they started with, and a follow-up in an existing Slack thread switches
 that conversation over too.
 
+**Instructions** is the prompt your agent is given before every answer. The default
+asks for a direct, cited answer in Slack-sized prose and no guessing; edit it in the
+Settings tab to change the tone, what to cite, or where to look first, and **Reset to
+default** brings the stock text back. Understudy appends what the agent should know
+about other coworkers' agents, so that part isn't yours to edit. Nothing in the prompt
+can loosen the sandbox: the read-only tool set, root containment, and secret redaction
+are enforced in code. Like the model, it takes effect on the next question, follow-ups
+included, and it lives in `~/.understudy/config.json`, not on the broker.
+
 The CLI offers the daemon basics too:
 
 ```sh
@@ -163,6 +173,7 @@ pnpm daemon pause      # refuse queries until resume (picked up within 5s while 
 pnpm daemon resume
 pnpm daemon roots list|add <dir>|remove <dir>
 pnpm daemon model list|set <model>|default   # `set` takes any id Claude Code accepts
+pnpm daemon prompt show|set <file>|default   # the agent's instructions; `set -` reads stdin
 pnpm daemon status
 pnpm daemon unenroll   # revoke this machine and delete local credentials
 ```
@@ -180,6 +191,8 @@ kept in `~/.understudy/logs/` — the owner never has to trust the broker's log 
   directories, so a `PostToolUse` hook strips any result line that came from a protected
   file before the model sees it. No Bash, no writes, no web access, no MCP servers from
   the owner's own setup, and guest sessions never load the owner's `CLAUDE.md`/settings.
+  None of it hinges on the prompt, so an owner rewriting their agent's instructions
+  cannot loosen it.
 - **Redaction on both ends.** Credential-shaped strings (PEM blocks, `sk-…`, `AKIA…`,
   `xoxb-…`, JWTs, `password=…`) are scrubbed on the daemon before the answer leaves the
   machine, and again on the broker before posting to Slack.

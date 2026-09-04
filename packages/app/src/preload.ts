@@ -10,7 +10,7 @@ contextBridge.exposeInMainWorld("understudy", {
   closeWindow: () => ipcRenderer.invoke("close-onboarding"),
   onPrefill: (cb: (data: unknown) => void) =>
     ipcRenderer.on("prefill", (_event, data) => cb(data)),
-  // owner panel (people / conversations / budget)
+  // owner panel (people / conversations / budget / instructions)
   panelOverview: () => ipcRenderer.invoke("panel-overview"),
   panelSearchUsers: (query: string) => ipcRenderer.invoke("panel-search-users", query),
   panelAcl: (action: "add" | "remove", slackUserId: string) =>
@@ -18,4 +18,6 @@ contextBridge.exposeInMainWorld("understudy", {
   panelLimit: (dailyLimit: number | null) => ipcRenderer.invoke("panel-limit", dailyLimit),
   panelPeers: (acceptPeerAsks: boolean) => ipcRenderer.invoke("panel-peers", acceptPeerAsks),
   panelTranscript: (threadKey: string) => ipcRenderer.invoke("panel-transcript", threadKey),
+  panelPrompt: () => ipcRenderer.invoke("panel-prompt"),
+  panelSetPrompt: (text: string) => ipcRenderer.invoke("panel-set-prompt", text),
 });

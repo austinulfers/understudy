@@ -11,6 +11,8 @@ export interface DaemonControl {
   setPaused(paused: boolean): void;
   /** Switch the answering model immediately; undefined restores the default. */
   setModel(model: string | undefined): void;
+  /** Switch the agent's instructions immediately; undefined restores the default. */
+  setPrompt(prompt: string | undefined): void;
   isConnected(): boolean;
 }
 
@@ -160,6 +162,10 @@ export function runDaemon(initial: DaemonConfig, hooks: DaemonHooks = {}): Daemo
     setModel(model) {
       // In-flight queries keep the model they started with.
       config = { ...config, model };
+    },
+    setPrompt(prompt) {
+      // Likewise, in-flight queries keep the instructions they started with.
+      config = { ...config, prompt };
     },
     isConnected: () => connected,
   };

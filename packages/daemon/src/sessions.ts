@@ -12,7 +12,7 @@ import {
   type DaemonToBroker,
   type PeerInfo,
 } from "@understudy/shared";
-import type { DaemonConfig } from "./config";
+import { DEFAULT_PROMPT, type DaemonConfig } from "./config";
 import { daemonEvents, type QueryEvent } from "./events";
 import { logLocal } from "./log";
 
@@ -38,14 +38,6 @@ type QueryMsg = Extract<BrokerToDaemon, { type: "query" }>;
 type PeerResultMsg = Extract<BrokerToDaemon, { type: "peer_result" }>;
 type Send = (msg: DaemonToBroker) => void;
 
-const BASE_PROMPT = `You are a read-only assistant answering a coworker's question about the code on this machine, on behalf of its owner. You can read, search, and list files, nothing else.
-
-Guidelines:
-- Answer the question directly and concisely; this is going into a Slack message.
-- Cite file paths (with line numbers where useful) so the asker can look for themselves.
-- If the answer isn't in the exposed code, say so plainly rather than guessing.
-- Never quote the contents of anything that looks like a credential or secret.`;
-
 function describePeer(peer: PeerInfo): string {
   const status = !peer.online ? "offline" : peer.paused ? "paused" : "online";
   const folders = peer.folders.length ? ` — folders: ${peer.folders.join(", ")}` : "";
@@ -54,12 +46,12 @@ function describePeer(peer: PeerInfo): string {
 }
 
 /**
- * The base prompt, plus what this session should know about other agents:
- * that it is one of them (depth > 0), or which ones the asker can reach and
- * whether it may consult them.
+ * The owner's instructions (or the default), plus what this session should
+ * know about other agents: that it is one of them (depth > 0), or which ones
+ * the asker can reach and whether it may consult them.
  */
-function buildSystemPrompt(msg: QueryMsg, canAsk: boolean): string {
-  const parts = [BASE_PROMPT];
+function buildSystemPrompt(config: DaemonConfig, msg: QueryMsg, canAsk: boolean): string {
+  const parts = [config.prompt?.trim() || DEFAULT_PROMPT];
   if (msg.depth > 0 && msg.viaHost) {
     parts.push(
       `This question comes from ${msg.viaHost}'s agent — another coworker's read-only agent — which is answering ${msg.askerName}'s question and needs something only the code here can tell it. Your answer goes straight back to that agent, not to a person: be precise and factual, cite paths, and keep it to a few paragraphs at most. You cannot consult other agents yourself.`,
@@ -167,6 +159,7 @@ async function runOne(config: DaemonConfig, msg: QueryMsg, send: Send): Promise<
     viaHost: msg.viaHost ?? undefined,
     question: msg.question,
     model: config.model ?? "default",
+    prompt: config.prompt ? "custom" : "default",
   });
   emit("start");
 
@@ -324,7 +317,7 @@ async function runOne(config: DaemonConfig, msg: QueryMsg, send: Send): Promise<
         additionalDirectories: extraRoots,
         // Undefined leaves the choice to Claude Code, as the owner asked for.
         model: config.model,
-        systemPrompt: buildSystemPrompt(msg, canAsk),
+        systemPrompt: buildSystemPrompt(config, msg, canAsk),
         tools: READ_ONLY_TOOLS,
         disallowedTools: ["Bash", "Write", "Edit", "NotebookEdit", "WebFetch", "WebSearch", "Task", "TodoWrite"],
         permissionMode: "default",

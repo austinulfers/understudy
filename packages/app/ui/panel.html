@@ -87,6 +87,20 @@
     font-weight: 650; font-size: 13px; cursor: pointer;
   }
   .save:disabled { opacity: .6; }
+  .field textarea {
+    display: block; width: 100%; min-height: 200px; padding: 9px 11px;
+    border: 1px solid var(--line); border-radius: 8px; font: inherit; line-height: 1.5;
+    resize: vertical; outline: none; -webkit-user-select: text; user-select: text;
+  }
+  .field textarea:focus { border-color: var(--brand); }
+  .row { display: flex; align-items: center; gap: 10px; }
+  .row .status { color: var(--muted); font-size: 12px; }
+  .secondary {
+    padding: 8px 14px; border: 1px solid var(--line); border-radius: 8px; background: #fff;
+    color: var(--ink); font-weight: 600; font-size: 13px; cursor: pointer;
+  }
+  .secondary:hover:not(:disabled) { border-color: var(--brand); }
+  .secondary:disabled { opacity: .5; cursor: default; }
   .empty { color: var(--muted); font-style: italic; padding: 14px 0; }
   h2.section { font-size: 13px; font-weight: 650; margin: 18px 0 4px; }
   h2.section:first-child { margin-top: 0; }
@@ -135,6 +149,15 @@
     <p class="hint">When a coworker asks their own agent something that lives in your code, their agent can put a question to yours. That only works for coworkers who could ask you directly, it counts against your daily cap, and every exchange shows up under Conversations.</p>
     <div class="field"><label><input type="checkbox" id="accept-peers"> Let other agents ask my agent questions</label></div>
     <div class="error" id="settings-error"></div>
+    <h2 class="section">Instructions</h2>
+    <p class="hint">What your agent is told before every answer. Change it to set the tone, what to cite, or where to look first. Understudy adds a note about the other agents the asker can reach after it. Read-only tools, shared folders, and secret redaction are enforced in code, so nothing here can loosen them.</p>
+    <div class="field"><textarea id="prompt"></textarea></div>
+    <div class="row">
+      <button class="save" id="save-prompt">Save</button>
+      <button class="secondary" id="reset-prompt">Reset to default</button>
+      <span class="status" id="prompt-status"></span>
+    </div>
+    <div class="error" id="prompt-error"></div>
   </div>
 </main>
 
@@ -314,7 +337,49 @@
     refresh();
   };
 
+  // --- instructions ---
+  // Kept in this Mac's config rather than on the broker, so loaded once on their
+  // own: the 30s refresh must never overwrite an edit in progress.
+  let promptInfo = { prompt: "", defaultPrompt: "" };
+  const storedPrompt = () => promptInfo.prompt || promptInfo.defaultPrompt;
+
+  function renderPromptState(note) {
+    const text = $("prompt").value.trim();
+    const dirty = text !== storedPrompt();
+    $("save-prompt").disabled = !dirty;
+    $("reset-prompt").disabled = text === promptInfo.defaultPrompt;
+    $("prompt-status").textContent =
+      note ?? (dirty ? "Unsaved changes." : promptInfo.prompt ? "Using your instructions." : "Using the default instructions.");
+  }
+
+  async function loadPrompt() {
+    const res = await window.understudy.panelPrompt();
+    if (!res.ok) { $("prompt-error").textContent = res.error; return; }
+    promptInfo = res.data;
+    $("prompt").value = storedPrompt();
+    renderPromptState();
+  }
+
+  $("prompt").addEventListener("input", () => renderPromptState());
+
+  $("reset-prompt").onclick = () => {
+    $("prompt").value = promptInfo.defaultPrompt;
+    renderPromptState();
+    $("prompt").focus();
+  };
+
+  $("save-prompt").onclick = async () => {
+    $("save-prompt").disabled = true;
+    const res = await window.understudy.panelSetPrompt($("prompt").value);
+    if (!res.ok) { $("prompt-error").textContent = res.error; renderPromptState(); return; }
+    $("prompt-error").textContent = "";
+    promptInfo.prompt = res.data.prompt;
+    $("prompt").value = storedPrompt();
+    renderPromptState("Saved. Applies from the next question.");
+  };
+
   refresh();
+  loadPrompt();
   setInterval(refresh, 30000);
 </script>
 </body>

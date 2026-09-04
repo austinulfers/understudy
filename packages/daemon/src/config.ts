@@ -13,6 +13,12 @@ export interface DaemonConfig {
   paused: boolean;
   /** Model the guest agent answers with; unset means Claude Code's default. */
   model?: string;
+  /**
+   * The owner's own instructions for the guest agent, in place of
+   * DEFAULT_PROMPT; unset means the default. Read-only tools, root
+   * containment, and secret redaction are enforced in code, never here.
+   */
+  prompt?: string;
 }
 
 export interface ModelChoice {
@@ -34,6 +40,38 @@ export const MODEL_CHOICES: ModelChoice[] = [
 export function modelLabel(model: string | undefined): string {
   const choice = MODEL_CHOICES.find((c) => c.id === (model ?? null));
   return choice ? choice.label : model!;
+}
+
+/**
+ * How the guest agent is told to behave, unless the owner wrote their own
+ * (`config.prompt`). Either way, sessions append what to know about other
+ * coworkers' agents after it, so this is the first part of the system prompt.
+ */
+export const DEFAULT_PROMPT = `You are a read-only assistant answering a coworker's question about the code on this machine, on behalf of its owner. You can read, search, and list files, nothing else.
+
+Guidelines:
+- Answer the question directly and concisely; this is going into a Slack message.
+- Cite file paths (with line numbers where useful) so the asker can look for themselves.
+- If the answer isn't in the exposed code, say so plainly rather than guessing.
+- Never quote the contents of anything that looks like a credential or secret.`;
+
+/** A page or two is plenty; anything longer crowds the code out of context. */
+export const MAX_PROMPT_CHARS = 8000;
+
+/**
+ * What to store for instructions the owner typed: undefined for blank or the
+ * default text (so the default keeps applying, and keeps improving with
+ * updates), the trimmed text otherwise. Throws when it is too long to store.
+ */
+export function normalizePrompt(text: string): string | undefined {
+  const trimmed = text.replace(/\r\n/g, "\n").trim();
+  if (!trimmed || trimmed === DEFAULT_PROMPT) return undefined;
+  if (trimmed.length > MAX_PROMPT_CHARS) {
+    throw new Error(
+      `Instructions can be at most ${MAX_PROMPT_CHARS.toLocaleString()} characters; these are ${trimmed.length.toLocaleString()}.`,
+    );
+  }
+  return trimmed;
 }
 
 export const CONFIG_DIR = path.join(os.homedir(), ".understudy");

@@ -1,9 +1,12 @@
+import * as fs from "node:fs";
 import {
   CONFIG_DIR,
+  DEFAULT_PROMPT,
   deleteConfig,
   loadConfig,
   MODEL_CHOICES,
   modelLabel,
+  normalizePrompt,
   normalizeRoot,
   saveConfig,
 } from "./config";
@@ -19,6 +22,8 @@ Usage:
   pause | resume        toggle whether queries are answered
   roots list|add <dir>|remove <dir>
   model list|set <model>|default
+  prompt show|set <file>|default
+                        the agent's instructions; \`set -\` reads them from stdin
   status                show enrollment and exposed directories
   unenroll              revoke this machine's access and delete local creds
 `;
@@ -34,6 +39,16 @@ function flagAll(args: string[], name: string): string[] {
     if (args[i] === `--${name}`) out.push(args[i + 1]!);
   }
   return out;
+}
+
+/** Instructions from a file, or stdin for `-`, ready to store; exits on a bad one. */
+function readPromptFile(file: string): string | undefined {
+  try {
+    return normalizePrompt(fs.readFileSync(file === "-" ? 0 : file, "utf8"));
+  } catch (err) {
+    console.error((err as Error).message);
+    process.exit(1);
+  }
 }
 
 function requireConfig() {
@@ -165,12 +180,40 @@ switch (cmd) {
     }
     break;
   }
+  case "prompt": {
+    const config = requireConfig();
+    const [sub, file] = rest;
+    if (sub === "set" && file) {
+      const prompt = readPromptFile(file);
+      if (prompt) config.prompt = prompt;
+      else delete config.prompt;
+      saveConfig(config);
+      console.log(
+        prompt ? "Instructions saved. They apply from the next question." : "That is the default text; using the default instructions.",
+      );
+    } else if (sub === "default") {
+      delete config.prompt;
+      saveConfig(config);
+      console.log("Back to the default instructions.");
+    } else if (sub === "show") {
+      // The note goes to stderr, so `prompt show > file` captures only the instructions.
+      console.log(config.prompt ?? DEFAULT_PROMPT);
+      console.error(
+        config.prompt ? "\n(your instructions; `prompt default` restores the default)" : "\n(the default; `prompt set <file>` replaces it)",
+      );
+    } else {
+      console.error("Usage: prompt show | prompt set <file> | prompt default   (`set -` reads stdin)");
+      process.exit(1);
+    }
+    break;
+  }
   case "status": {
     const config = requireConfig();
     console.log(`host:    ${config.hostName}`);
     console.log(`broker:  ${config.brokerUrl}`);
     console.log(`paused:  ${config.paused}`);
     console.log(`model:   ${modelLabel(config.model)}`);
+    console.log(`prompt:  ${config.prompt ? "custom" : "default"}`);
     console.log(`roots:   ${config.roots.join(", ")}`);
     break;
   }

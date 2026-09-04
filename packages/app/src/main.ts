@@ -6,6 +6,7 @@ import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   daemonEvents,
+  DEFAULT_PROMPT,
   deleteConfig,
   enrollWithBroker,
   LOG_DIR,
@@ -13,6 +14,7 @@ import {
   logLocal,
   MODEL_CHOICES,
   modelLabel,
+  normalizePrompt,
   normalizeRoot,
   queryNotice,
   runDaemon,
@@ -402,6 +404,25 @@ ipcMain.handle("panel-peers", (_event, acceptPeerAsks: boolean) =>
 );
 ipcMain.handle("panel-transcript", (_event, threadKey: string) =>
   panelHandler(() => brokerFetch(`/api/host/transcript?key=${encodeURIComponent(String(threadKey))}`))(),
+);
+
+/**
+ * The agent's instructions are the one panel setting that never touches the
+ * broker: like the model, they live in this Mac's config.
+ */
+ipcMain.handle("panel-prompt", () =>
+  panelHandler(async () => ({ prompt: config?.prompt ?? "", defaultPrompt: DEFAULT_PROMPT }))(),
+);
+ipcMain.handle("panel-set-prompt", (_event, text: unknown) =>
+  panelHandler(async () => {
+    if (!config) throw new Error("Not enrolled.");
+    const prompt = normalizePrompt(typeof text === "string" ? text : "");
+    if (prompt) config.prompt = prompt;
+    else delete config.prompt;
+    saveConfig(config);
+    control?.setPrompt(prompt);
+    return { prompt: config.prompt ?? "" };
+  })(),
 );
 
 // ---------- IPC ----------
