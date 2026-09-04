@@ -28,6 +28,7 @@ export const DENY_BASENAMES: string[] = [
   ".pgpass",
   "credentials",
   "credentials.json",
+  ".credentials*",
   "service-account*.json",
   "secrets.*",
 ];
@@ -41,7 +42,6 @@ export const DENY_DIR_SEGMENTS: string[] = [
   ".config/gcloud",
   ".kube",
   ".docker",
-  ".claude",
   ".understudy",
   // The daemon's config directory under its pre-rename name.
   ".workspace-agent",

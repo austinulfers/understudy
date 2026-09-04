@@ -176,7 +176,7 @@ kept in `~/.understudy/logs/` — the owner never has to trust the broker's log 
   hook independently vets every call (including reads inside the working directory,
   which Claude Code would otherwise approve on its own): paths are resolved, symlinks
   followed, and must land inside an exposed root without matching the secret deny-list
-  (`.env*`, key files, `.ssh/`, `.aws/`, `.claude/`, …). Search tools scan whole
+  (`.env*`, key files, `.ssh/`, `.aws/`, …). Search tools scan whole
   directories, so a `PostToolUse` hook strips any result line that came from a protected
   file before the model sees it. No Bash, no writes, no web access, no MCP servers from
   the owner's own setup, and guest sessions never load the owner's `CLAUDE.md`/settings.

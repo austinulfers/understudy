@@ -38,6 +38,8 @@ check("denies path outside root", !checkPath("/etc/passwd", [root]).allowed);
 check("denies .env inside root", !checkPath(path.join(root, ".env"), [root]).allowed);
 check("denies .env.local inside root", !checkPath(path.join(root, ".env.local"), [root]).allowed);
 check("denies .ssh segment", !checkPath(path.join(root, ".ssh/id_rsa"), [root]).allowed);
+check("allows .claude inside root", checkPath(path.join(root, ".claude/skills/a.md"), [root]).allowed);
+check("denies .credentials.json inside .claude", !checkPath(path.join(root, ".claude/.credentials.json"), [root]).allowed);
 check("denies traversal escape", !checkPath(path.join(root, "../../etc/passwd"), [root]).allowed);
 check("extracts absolute glob pattern", extractToolPaths("Glob", { pattern: "/etc/**" }).length > 0);
 check("ignores relative glob pattern", extractToolPaths("Glob", { pattern: "src/**/*.ts" }).length === 0);
