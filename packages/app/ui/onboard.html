@@ -113,6 +113,7 @@
   <div class="step">
     <h2>2 · Folders coworkers may ask about</h2>
     <div class="folders" id="folders"><div class="empty">No folders shared yet.</div></div>
+    <div class="hint" id="default-hint" style="display:none">Your <b>~/.claude</b> folder is shared to start with; remove it if you'd rather not.</div>
     <button class="secondary" id="add">Add Folder…</button>
   </div>
 
@@ -136,6 +137,7 @@
 <script>
   const $ = (id) => document.getElementById(id);
   let roots = [];
+  let defaultsApplied = false;
 
   function renderFolders() {
     const box = $("folders");
@@ -171,6 +173,13 @@
     if (data.token) $("token").value = data.token;
     if (data.broker) $("broker").value = data.broker;
     parseTokenField();
+    if (!defaultsApplied) {
+      defaultsApplied = true;
+      const defaults = data.defaultRoots ?? [];
+      for (const dir of defaults) if (!roots.includes(dir)) roots.push(dir);
+      if (defaults.length) $("default-hint").style.display = "block";
+      renderFolders();
+    }
     renderClaude(data.claudeSignedIn);
   }
 

@@ -96,10 +96,26 @@ function claudeSignedIn(): boolean {
   return fs.existsSync(path.join(os.homedir(), ".claude", ".credentials.json"));
 }
 
+/**
+ * Folders the onboarding form starts out sharing: ~/.claude, when Claude Code
+ * has run on this Mac. The owner can remove it before enrolling, and
+ * .credentials* inside it is on the deny-list regardless. Only the onboarding
+ * form reads this, so a copy that is already enrolled keeps exactly the roots
+ * its owner chose.
+ */
+function defaultRoots(): string[] {
+  try {
+    return [normalizeRoot(path.join(os.homedir(), ".claude"))];
+  } catch {
+    return [];
+  }
+}
+
 function prefillPayload() {
   return {
     broker: pendingPrefill.broker ?? "",
     token: pendingPrefill.token ?? "",
+    defaultRoots: defaultRoots(),
     claudeSignedIn: claudeSignedIn(),
     enrolled: !!config,
     hostName: config?.hostName ?? "",

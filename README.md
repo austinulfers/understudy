@@ -76,9 +76,9 @@ version bump — see [docs/RELEASING.md](docs/RELEASING.md).
 2. The token page gives you a download link and a one-click `understudy://enroll?…`
    link — send both to them privately.
 3. They install the app, click the link, pick which folders to share in a native
-   dialog, and hit **Enroll This Mac**. The app lives in the menu bar, starts at
-   login, keeps itself updated from Releases, and answers begin flowing. Sessions
-   run on **their** Claude sign-in
+   dialog (their `~/.claude` folder is preselected), and hit **Enroll This Mac**.
+   The app lives in the menu bar, starts at login, keeps itself updated from
+   Releases, and answers begin flowing. Sessions run on **their** Claude sign-in
    (the app detects it and points them at claude.com/claude-code if missing).
 4. Access is theirs to give: the new owner DMs the bot `allow @coworker` (or uses the
    app's **People** tab) to choose who may ask their agent. The owner is allowed
