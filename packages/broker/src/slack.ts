@@ -149,7 +149,9 @@ async function ask(opts: {
 
 app.command("/ask", async ({ command, ack, respond, client }) => {
   await ack();
-  const target = parseTarget(command.text.trim());
+  // The command itself is the verb, so `/ask jane where…` needs no colon after
+  // the name; parseTarget only accepts a bare name in the "ask <name> …" form.
+  const target = parseTarget(`ask ${command.text.trim()}`);
   if (!target) {
     await respond({ response_type: "ephemeral", text: helpText(command.user_id) });
     return;

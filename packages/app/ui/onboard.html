@@ -75,15 +75,6 @@
   }
   button.primary:hover { background: var(--brand-deeper); }
   button.primary:disabled { opacity: .6; cursor: default; }
-  /* success view */
-  #success { display: none; text-align: center; padding-top: 40px; }
-  #success .check {
-    width: 76px; height: 76px; border-radius: 50%; background: var(--brand-deep);
-    color: #fff; font-size: 40px; line-height: 76px; margin: 0 auto 18px;
-  }
-  #success h1 { margin-bottom: 6px; }
-  #success p { color: var(--muted); max-width: 360px; margin: 0 auto 10px; }
-  #success .primary { max-width: 220px; margin-top: 18px; }
 </style>
 </head>
 <body>
@@ -126,14 +117,6 @@
   <button class="primary" id="enroll">Enroll This Mac</button>
 </div>
 
-<div class="wrap" id="success">
-  <div class="check">✓</div>
-  <h1 id="success-title">You're connected</h1>
-  <p>Look for the <b>two speech bubbles in your menu bar</b> — that's where you pause answering, change shared folders, or leave entirely.</p>
-  <p>You'll get a notification whenever a coworker asks your agent something, and a full log stays on this Mac.</p>
-  <button class="primary" id="close">Done</button>
-</div>
-
 <script>
   const $ = (id) => document.getElementById(id);
   let roots = [];
@@ -169,7 +152,6 @@
   }
 
   function applyPrefill(data) {
-    if (data.enrolled) { showSuccess(data.hostName); return; }
     if (data.token) $("token").value = data.token;
     if (data.broker) $("broker").value = data.broker;
     parseTokenField();
@@ -215,7 +197,8 @@
       roots,
     });
     if (result.ok) {
-      showSuccess(result.hostName);
+      // Enrolled: the app swaps this form for the guide, opened on the welcome note.
+      window.understudy.finishOnboarding();
     } else {
       $("error").textContent = result.error;
       $("error").style.display = "block";
@@ -223,14 +206,6 @@
       btn.textContent = "Enroll This Mac";
     }
   };
-
-  function showSuccess(hostName) {
-    $("form").style.display = "none";
-    $("success").style.display = "block";
-    $("success-title").textContent = hostName ? `You're connected as “${hostName}”` : "You're connected";
-  }
-
-  $("close").onclick = () => window.understudy.closeWindow();
 
   window.understudy.onPrefill(applyPrefill);
   window.understudy.prefill().then(applyPrefill);

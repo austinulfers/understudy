@@ -1,0 +1,237 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Understudy Help</title>
+<style>
+  :root {
+    --brand: #8870fc;
+    --brand-deep: #5b44d9;
+    --brand-deeper: #4a35bf;
+    --ink: #0e142d;
+    --muted: #5b6a70;
+    --line: #dde4e5;
+    --bg: #f6f8f8;
+    --tint: #f1eeff;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  .wrap { padding: 28px 32px 36px; max-width: 680px; margin: 0 auto; }
+  header { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; }
+  header svg { flex: none; }
+  h1 { font-size: 20px; margin: 0; font-weight: 650; }
+  .sub { color: var(--muted); margin: 0 0 24px; }
+  /* welcome note, shown right after enrolling */
+  #welcome { display: none; text-align: center; padding-top: 12px; margin-bottom: 30px; }
+  #welcome .check {
+    width: 76px; height: 76px; border-radius: 50%; background: var(--brand-deep);
+    color: #fff; font-size: 40px; line-height: 76px; margin: 0 auto 18px;
+  }
+  #welcome h1 { margin-bottom: 6px; }
+  #welcome p { color: var(--muted); max-width: 420px; margin: 0 auto 10px; }
+  section { margin-bottom: 26px; }
+  section h2 {
+    font-size: 11px; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--brand-deep); margin: 0 0 8px; font-weight: 650;
+  }
+  p { margin: 0 0 8px; }
+  code, .snippet { font-family: ui-monospace, Menlo, monospace; font-size: 12.5px; }
+  p code, li code, td code {
+    background: #fff; border: 1px solid var(--line); border-radius: 5px;
+    padding: 1px 5px; white-space: nowrap;
+  }
+  .callout { background: var(--tint); border: 1px solid #d9d0ff; border-radius: 10px; padding: 12px 14px; }
+  .callout .snippet { margin-top: 8px; }
+  .example { background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; }
+  .example .where { font-size: 12px; font-weight: 650; color: var(--muted); margin-bottom: 4px; }
+  .example .explain { color: var(--muted); font-size: 12.5px; margin: 6px 0 0; }
+  .snippet { display: flex; align-items: center; gap: 10px; }
+  .snippet > span { flex: 1; -webkit-user-select: text; user-select: text; }
+  .snippet button {
+    flex: none; border: 1px solid var(--line); background: #fff; color: var(--brand-deep);
+    border-radius: 6px; padding: 2px 9px; font-family: system-ui, -apple-system, sans-serif;
+    font-size: 12px; font-weight: 600; cursor: pointer;
+  }
+  .snippet button:hover { border-color: var(--brand); }
+  .note { color: var(--muted); font-size: 12.5px; }
+  .table { background: #fff; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { text-align: left; vertical-align: top; padding: 7px 10px; border-top: 1px solid var(--line); font-size: 13px; }
+  th {
+    background: #f9f8ff; color: var(--muted); font-size: 11px; letter-spacing: .06em;
+    text-transform: uppercase; font-weight: 650;
+  }
+  tr:first-child th { border-top: none; }
+  td:first-child { width: 44%; }
+  td:first-child code { white-space: normal; }
+  ul { margin: 0; padding-left: 20px; }
+  li { margin-bottom: 4px; }
+  button.primary {
+    display: none; width: 100%; max-width: 220px; margin: 8px auto 0; padding: 12px;
+    border: none; border-radius: 10px; background: var(--brand-deep); color: #fff;
+    font-size: 15px; font-weight: 650; cursor: pointer;
+  }
+  button.primary:hover { background: var(--brand-deeper); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="welcome">
+    <div class="check">✓</div>
+    <h1>You're connected as “<span data-host></span>”</h1>
+    <p>Look for the <b>two speech bubbles in your menu bar</b> — that's where you pause answering, change shared folders, or leave entirely.</p>
+    <p>You'll get a notification whenever a coworker asks your agent something, and a full log stays on this Mac.</p>
+    <p>Here's how people reach your agent, and how you stay in control. This page is always one click away under <b>Help</b> in that same menu.</p>
+  </div>
+
+  <header id="plain">
+    <!-- assets/mark.svg -->
+    <svg width="44" height="40" viewBox="317 40 460 414" aria-hidden="true">
+      <defs>
+        <path id="bubble" d="M0 95 L0 210 C0 248 20 258 20 275 L18 308 C16 322 13 334 7 343 C33 343 63 330 88 305 L245 305 A95 95 0 0 0 340 210 L340 95 A95 95 0 0 0 245 0 L95 0 A95 95 0 0 0 0 95 Z"/>
+        <mask id="gap" maskUnits="userSpaceOnUse" x="317" y="40" width="460" height="414"><rect x="317" y="40" width="460" height="414" fill="#fff"/><use href="#bubble" transform="translate(317 111)" fill="#000" stroke="#000" stroke-width="40" stroke-linejoin="round"/></mask>
+        <mask id="face" maskUnits="userSpaceOnUse" x="317" y="40" width="460" height="414"><rect x="317" y="40" width="460" height="414" fill="#fff"/><rect x="396" y="199" width="35" height="71" rx="17.5" fill="#000"/><rect x="543" y="199" width="35" height="71" rx="17.5" fill="#000"/><path d="M456 306 Q487 325 518 306" fill="none" stroke="#000" stroke-width="17" stroke-linecap="round"/></mask>
+      </defs>
+      <g mask="url(#gap)"><use href="#bubble" transform="translate(777 40) scale(-1 1)" fill="var(--brand)"/></g>
+      <g mask="url(#face)"><use href="#bubble" transform="translate(317 111)" fill="var(--ink)"/></g>
+    </svg>
+    <h1>How to use Understudy</h1>
+  </header>
+  <p class="sub" id="plain-sub"></p>
+
+  <section class="callout" id="try">
+    <h2>Try it now</h2>
+    <p>You can always ask your own agent, so test it before anyone else does. In Slack, open a DM with <b>@Understudy</b> and send:</p>
+    <div class="snippet"><span><span data-host></span>: what's in the folders you can read?</span><button>Copy</button></div>
+  </section>
+
+  <section>
+    <h2>Asking an agent</h2>
+    <p>Coworkers reach your agent by its name, <b data-host></b>, and you reach theirs the same way with their name. Three ways to ask:</p>
+    <div class="example">
+      <div class="where">In a channel</div>
+      <div class="snippet"><span>/ask <span data-host></span> where does token refresh happen?</span><button>Copy</button></div>
+      <p class="explain">Understudy posts the question and answers in a thread. Reply in that thread to follow up; the agent remembers the conversation. Run <code>/invite @Understudy</code> in the channel once first.</p>
+    </div>
+    <div class="example">
+      <div class="where">By mention</div>
+      <div class="snippet"><span>@Understudy <span data-host></span>: what runs on deploy?</span><button>Copy</button></div>
+      <p class="explain">Same as <code>/ask</code>, from an ordinary message. Mentioning Understudy inside an answer thread continues that conversation.</p>
+    </div>
+    <div class="example">
+      <div class="where">In a DM with Understudy</div>
+      <div class="snippet"><span><span data-host></span>: where is the retry logic?</span><button>Copy</button></div>
+      <p class="explain">After that, just keep typing: the DM stays pointed at <span data-host></span> until you name another agent or send <code>reset</code>.</p>
+    </div>
+    <p class="note">If an agent is offline, asleep, or paused, the bot says so right away.</p>
+  </section>
+
+  <section>
+    <h2>Who can ask your agent</h2>
+    <p>Nobody until you say so (admins aside). Grant and remove access from your DM with <b>@Understudy</b>:</p>
+    <ul>
+      <li><code>allow @name</code> — a coworker can now ask <b data-host></b>. The bot DMs them to explain how.</li>
+      <li><code>deny @name</code> — take it back.</li>
+      <li><code>team</code> — who has access, and who gave it.</li>
+    </ul>
+    <p>The <b>People</b> tab in <b>Open Understudy…</b> (menu bar) does the same with a name search.</p>
+  </section>
+
+  <section>
+    <h2>Every Slack command</h2>
+    <div class="table"><table>
+      <tr><th colspan="2">In a channel, or the DM</th></tr>
+      <tr><td><code>/ask &lt;agent&gt; &lt;question&gt;</code></td><td>Ask an agent. Plain <code>/ask</code> shows this list and the agents you can reach.</td></tr>
+      <tr><td><code>@Understudy &lt;agent&gt;: &lt;question&gt;</code></td><td>The same by mention. <code>@Understudy ask &lt;agent&gt; &lt;question&gt;</code> works too.</td></tr>
+      <tr><td>Reply in the thread</td><td>Follow up. The agent picks up where it left off.</td></tr>
+      <tr><th colspan="2">In a DM with Understudy</th></tr>
+      <tr><td><code>&lt;agent&gt;: &lt;question&gt;</code></td><td>Ask, and make that agent the DM's default. <code>ask &lt;agent&gt; &lt;question&gt;</code> works too.</td></tr>
+      <tr><td>Anything else</td><td>Goes to the agent you last named.</td></tr>
+      <tr><td><code>hosts</code></td><td>Agents you can ask, whether each is online or paused, and the folders it shares. <code>agents</code> is the same.</td></tr>
+      <tr><td><code>reset</code></td><td>Forget the current agent and its conversation.</td></tr>
+      <tr><td><code>help</code></td><td>A short version of this page, with the agents you can ask. An empty message does it too.</td></tr>
+      <tr><th colspan="2">If you own an agent, in your DM</th></tr>
+      <tr><td><code>allow @name</code></td><td>Let a coworker ask your agent. Several mentions at once are fine.</td></tr>
+      <tr><td><code>deny @name</code></td><td>Remove their access. <code>revoke @name</code> is the same.</td></tr>
+      <tr><td><code>team</code></td><td>Everyone who can ask your agent, and who added them.</td></tr>
+    </table></div>
+  </section>
+
+  <section>
+    <h2>What your agent can and can't do</h2>
+    <ul>
+      <li><b>Read-only.</b> It can read and search files inside the folders you share, and nothing else. No writes, no commands, no web.</li>
+      <li><b>Secrets stay put.</b> <code>.env</code> files, keys, <code>.ssh</code>, <code>.aws</code> and the like are never read, and credential-shaped text is scrubbed before an answer leaves this Mac.</li>
+      <li><b>On your account.</b> Questions run on your Claude sign-in and count against a daily cap you set under <b>Settings</b>.</li>
+      <li><b>Nothing is hidden.</b> Every question notifies you, shows up under <b>Conversations</b>, and is logged on this Mac.</li>
+      <li><b>Agents consult each other.</b> When a coworker's agent thinks yours knows better, it can ask yours, but only on behalf of people who could ask you directly. Switch that off under <b>Settings</b>.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>From the menu bar</h2>
+    <ul>
+      <li><b>Pause Answering</b> — decline questions until you resume.</li>
+      <li><b>Shared Folders</b> — add a folder, or stop sharing one.</li>
+      <li><b>Answer Model</b> — which Claude model answers; the cost and quality dial.</li>
+      <li><b>Recent Questions</b> — the last few things people asked.</li>
+      <li><b>Open Understudy…</b> — People, Conversations, and Settings (daily cap, other agents, your agent's instructions).</li>
+      <li><b>Open Activity Log</b> — the local record of everything.</li>
+      <li><b>Help</b> — this page.</li>
+      <li><b>Unenroll This Mac…</b> — leave entirely and delete the local credentials.</li>
+    </ul>
+  </section>
+
+  <button class="primary" id="done">Done</button>
+</div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const welcome = new URLSearchParams(location.search).get("welcome") === "1";
+
+  function render(ctx) {
+    const host = ctx.hostName || "jane";
+    for (const el of document.querySelectorAll("[data-host]")) el.textContent = host;
+    const connectedNote = welcome && ctx.enrolled;
+    $("welcome").style.display = connectedNote ? "block" : "none";
+    $("plain").style.display = connectedNote ? "none" : "flex";
+    $("plain-sub").style.display = connectedNote ? "none" : "block";
+    $("plain-sub").textContent = ctx.enrolled
+      ? `This Mac answers as “${host}”. Coworkers you've allowed reach it with that name.`
+      : "This Mac isn't set up yet. The examples use “jane” as the agent's name; yours is on your enrollment link.";
+    $("try").style.display = ctx.enrolled ? "block" : "none";
+    $("done").style.display = connectedNote ? "block" : "none";
+  }
+
+  async function load() {
+    render(await window.understudy.helpContext());
+  }
+
+  for (const btn of document.querySelectorAll(".snippet button")) {
+    btn.onclick = async () => {
+      const text = btn.parentElement.querySelector("span").textContent;
+      try {
+        await navigator.clipboard.writeText(text);
+        btn.textContent = "Copied";
+        setTimeout(() => { btn.textContent = "Copy"; }, 1200);
+      } catch {}
+    };
+  }
+
+  $("done").onclick = () => window.understudy.closeWindow();
+
+  // The name can change underneath an open window (unenroll, re-enroll).
+  window.addEventListener("focus", load);
+  load();
+</script>
+</body>
+</html>

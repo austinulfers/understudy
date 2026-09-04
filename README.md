@@ -95,6 +95,10 @@ CLI alternative (any platform): `pnpm daemon enroll --broker <url> --token <T> -
 
 If a host is offline, asleep, or paused, the bot says so immediately.
 
+The app shows all of this — worked examples and the full command list, written around
+the owner's own agent name — right after enrollment, and **Help** in the menu bar brings
+that page back any time.
+
 ### 6. Agents consult each other
 
 The agent you ask knows which *other* agents you can reach and which folders each one
@@ -135,7 +139,8 @@ suggest `/ask <name>` instead.
 ## Host-owner controls
 
 Everything is in the menu-bar app. The tray menu has pause/resume, shared folders,
-**Answer Model**, recent questions, start at login, and **Unenroll This Mac**.
+**Answer Model**, recent questions, start at login, **Help** (the examples and Slack
+command list), and **Unenroll This Mac**.
 **Open Understudy…** opens the owner panel:
 
 - **People** — who may ask your agent: search coworkers by name, add/remove.

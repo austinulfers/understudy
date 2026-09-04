@@ -30,6 +30,7 @@ import { installUpdate, startUpdateChecks, updateMenuItems } from "./updater";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const UI_HTML = path.join(__dirname, "..", "ui", "onboard.html");
 const PANEL_HTML = path.join(__dirname, "..", "ui", "panel.html");
+const HELP_HTML = path.join(__dirname, "..", "ui", "help.html");
 const PRELOAD = path.join(__dirname, "preload.cjs");
 const TRAY_ICON = path.join(__dirname, "..", "icons", "trayTemplate.png");
 const CLAUDE_DOCS = "https://claude.com/claude-code";
@@ -37,6 +38,7 @@ const CLAUDE_DOCS = "https://claude.com/claude-code";
 let tray: Tray | null = null;
 let onboarding: BrowserWindow | null = null;
 let panel: BrowserWindow | null = null;
+let help: BrowserWindow | null = null;
 let config: DaemonConfig | null = null;
 let control: DaemonControl | null = null;
 let connState: DaemonState = "disconnected";
@@ -60,6 +62,7 @@ if (!app.requestSingleInstanceLock()) {
 app.on("second-instance", (_event, argv) => {
   const link = argv.find(isEnrollLink);
   if (link) handleEnrollLink(link);
+  else if (config) showHelp();
   else showOnboarding();
 });
 
@@ -119,8 +122,6 @@ function prefillPayload() {
     token: pendingPrefill.token ?? "",
     defaultRoots: defaultRoots(),
     claudeSignedIn: claudeSignedIn(),
-    enrolled: !!config,
-    hostName: config?.hostName ?? "",
   };
 }
 
@@ -187,8 +188,10 @@ function rebuildMenu(): void {
 
   if (!config) {
     items.push({ label: "Set Up…", click: () => showOnboarding() });
+    items.push({ label: "Help", click: () => showHelp() });
   } else {
     items.push({ label: "Open Understudy…", click: () => showPanel() });
+    items.push({ label: "Help", click: () => showHelp() });
     items.push({ type: "separator" });
     items.push({
       label: "Pause Answering",
@@ -321,6 +324,11 @@ async function unenrollFlow(): Promise<void> {
 // ---------- onboarding window ----------
 
 function showOnboarding(): void {
+  // Already enrolled: there is no form to fill in, so show the connected page instead.
+  if (config) {
+    showHelp(true);
+    return;
+  }
   if (onboarding) {
     onboarding.show();
     onboarding.focus();
@@ -337,6 +345,36 @@ function showOnboarding(): void {
   void onboarding.loadFile(UI_HTML);
   onboarding.on("closed", () => {
     onboarding = null;
+  });
+}
+
+// ---------- help window ----------
+
+/**
+ * Worked examples and the full Slack command list, written around this Mac's
+ * agent name. `welcome` is the version shown right after enrolling: it opens
+ * on the "you're connected" note instead of the plain title.
+ */
+function showHelp(welcome = false): void {
+  const query: Record<string, string> = welcome ? { welcome: "1" } : {};
+  if (help) {
+    // A window opened before enrolling would otherwise keep the placeholder name.
+    if (welcome) void help.loadFile(HELP_HTML, { query });
+    help.show();
+    help.focus();
+    return;
+  }
+  help = new BrowserWindow({
+    width: 640,
+    height: 780,
+    minWidth: 480,
+    minHeight: 480,
+    title: "Understudy Help",
+    webPreferences: { preload: PRELOAD, contextIsolation: true, nodeIntegration: false },
+  });
+  void help.loadFile(HELP_HTML, { query });
+  help.on("closed", () => {
+    help = null;
   });
 }
 
@@ -468,7 +506,15 @@ ipcMain.handle("open-external", (_event, url: string) => {
   if (typeof url === "string" && url.startsWith("https://")) void shell.openExternal(url);
 });
 
-ipcMain.handle("close-onboarding", () => onboarding?.close());
+ipcMain.handle("close-window", (event) => BrowserWindow.fromWebContents(event.sender)?.close());
+
+/** The form is done: hand the new owner the guide, opened on the welcome note. */
+ipcMain.handle("finish-onboarding", () => {
+  showHelp(true);
+  onboarding?.close();
+});
+
+ipcMain.handle("help-context", () => ({ hostName: config?.hostName ?? "", enrolled: !!config }));
 
 // ---------- app lifecycle ----------
 

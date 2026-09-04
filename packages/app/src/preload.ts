@@ -7,9 +7,12 @@ contextBridge.exposeInMainWorld("understudy", {
   enroll: (payload: { broker: string; token: string; roots: string[] }) =>
     ipcRenderer.invoke("enroll", payload),
   openExternal: (url: string) => ipcRenderer.invoke("open-external", url),
-  closeWindow: () => ipcRenderer.invoke("close-onboarding"),
+  finishOnboarding: () => ipcRenderer.invoke("finish-onboarding"),
+  closeWindow: () => ipcRenderer.invoke("close-window"),
   onPrefill: (cb: (data: unknown) => void) =>
     ipcRenderer.on("prefill", (_event, data) => cb(data)),
+  // help page (examples + Slack command list)
+  helpContext: () => ipcRenderer.invoke("help-context"),
   // owner panel (people / conversations / budget / instructions)
   panelOverview: () => ipcRenderer.invoke("panel-overview"),
   panelSearchUsers: (query: string) => ipcRenderer.invoke("panel-search-users", query),
